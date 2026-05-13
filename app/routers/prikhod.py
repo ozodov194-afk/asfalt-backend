@@ -1,17 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date
-from datetime import date
+from sqlalchemy import func, cast, Date, text
+from datetime import date, timedelta
 from typing import List
 from app.database import get_db
 from app import models, schemas
 
 router = APIRouter()
 
-TZ = 'Asia/Tashkent'
-
+# Ташкент = UTC+5, сдвигаем время на +5 часов перед фильтрацией по дате
 def tz_date(col):
-    return func.date(func.timezone(TZ, col))
+    return cast(col + text("interval '5 hours'"), Date)
 
 @router.post("/", response_model=schemas.PrikhodOut, summary="Добавить приход сырья")
 def create_prikhod(data: schemas.PrikhodCreate, db: Session = Depends(get_db)):

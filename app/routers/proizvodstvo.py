@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date
+from sqlalchemy import func, cast, Date, text
 from datetime import date
 from typing import List
 from app.database import get_db
@@ -8,10 +8,8 @@ from app import models, schemas
 
 router = APIRouter()
 
-TZ = 'Asia/Tashkent'
-
 def tz_date(col):
-    return func.date(func.timezone(TZ, col))
+    return cast(col + text("interval '5 hours'"), Date)
 
 @router.post("/", response_model=schemas.ProizvodstvoOut, summary="Добавить партию асфальта")
 def create_proizvodstvo(data: schemas.ProizvodstvoCreate, db: Session = Depends(get_db)):
@@ -46,4 +44,5 @@ def itog_proizvodstvo(den: date = None, db: Session = Depends(get_db)):
         .group_by(models.MarkaAsfalta.name)
         .all()
     )
-    return [{"marka": r.name, "itogo_kg": round(r.itogo_kg, 1), "partiy": r.partiy, "avg_temperatura": round(r.avg_temp, 1) if r.avg_temp else None} for r in rows]
+    return [{"marka": r.name, "itogo_kg": round(r.itogo_kg, 1), "partiy": r.partiy,
+             "avg_temperatura": round(r.avg_temp, 1) if r.avg_temp else None} for r in rows]

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date
+from sqlalchemy import func, cast, Date, text
 from datetime import date
 from typing import List
 from app.database import get_db
@@ -8,10 +8,8 @@ from app import models, schemas
 
 router = APIRouter()
 
-TZ = 'Asia/Tashkent'
-
 def tz_date(col):
-    return func.date(func.timezone(TZ, col))
+    return cast(col + text("interval '5 hours'"), Date)
 
 @router.post("/", response_model=schemas.RaskhodOut, summary="Добавить расход сырья")
 def create_raskhod(data: schemas.RaskhodCreate, db: Session = Depends(get_db)):
@@ -24,9 +22,6 @@ def create_raskhod(data: schemas.RaskhodCreate, db: Session = Depends(get_db)):
     raskhod = models.RaskhodSyrya(**data.model_dump(), otklonenie_pct=otklonenie)
     db.add(raskhod)
     ostatok.kolichestvo_kg -= data.fakt_kg
-    vid = db.query(models.VidSyrya).get(data.vid_syrya_id)
-    if vid and ostatok.kolichestvo_kg < vid.min_ostatok:
-        pass
     db.commit()
     db.refresh(raskhod)
     return schemas.RaskhodOut.model_validate(raskhod)

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date
+from sqlalchemy import func, cast, Date, text
 from datetime import date
 from typing import List
 from app.database import get_db
@@ -8,10 +8,8 @@ from app import models, schemas
 
 router = APIRouter()
 
-TZ = 'Asia/Tashkent'
-
 def tz_date(col):
-    return func.date(func.timezone(TZ, col))
+    return cast(col + text("interval '5 hours'"), Date)
 
 @router.post("/", response_model=schemas.ProdazhaOut, summary="Добавить отгрузку")
 def create_prodazha(data: schemas.ProdazhaCreate, db: Session = Depends(get_db)):

@@ -1,16 +1,14 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date
+from sqlalchemy import func, cast, Date, text
 from datetime import date
 from app.database import get_db
 from app import models
 
 router = APIRouter()
 
-TZ = 'Asia/Tashkent'
-
 def tz_date(col):
-    return func.date(func.timezone(TZ, col))
+    return cast(col + text("interval '5 hours'"), Date)
 
 @router.get("/segodnya", summary="Все данные дашборда за сегодня")
 def dashboard_segodnya(den: date = None, db: Session = Depends(get_db)):
