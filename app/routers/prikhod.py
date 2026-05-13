@@ -8,38 +8,33 @@ from app import models, schemas
 
 router = APIRouter()
 
+TZ = 'Asia/Tashkent'
+
+def tz_date(col):
+    return func.date(func.timezone(TZ, col))
+
 @router.post("/", response_model=schemas.PrikhodOut, summary="Добавить приход сырья")
 def create_prikhod(data: schemas.PrikhodCreate, db: Session = Depends(get_db)):
-    # Считаем нетто
     netto = data.brutto_kg - data.tara_kg
     if netto <= 0:
         raise HTTPException(400, "Нетто не может быть отрицательным (брутто должно быть больше тары)")
-
-    # Сохраняем запись прихода
     prikhod = models.PrikhodSyrya(**data.model_dump(), netto_kg=netto)
     db.add(prikhod)
-
-    # Обновляем остаток на складе
     ostatok = db.query(models.Ostatok).filter_by(vid_syrya_id=data.vid_syrya_id).first()
     if ostatok:
         ostatok.kolichestvo_kg += netto
     else:
         ostatok = models.Ostatok(vid_syrya_id=data.vid_syrya_id, kolichestvo_kg=netto)
         db.add(ostatok)
-
     db.commit()
     db.refresh(prikhod)
     return prikhod
 
 @router.get("/", response_model=List[schemas.PrikhodOut], summary="Список приходов")
-def get_prikhod(
-    den: date = None,
-    vid_syrya_id: int = None,
-    db: Session = Depends(get_db)
-):
+def get_prikhod(den: date = None, vid_syrya_id: int = None, db: Session = Depends(get_db)):
     q = db.query(models.PrikhodSyrya)
     if den:
-        q = q.filter(cast(models.PrikhodSyrya.data_vremya, Date) == den)
+        q = q.filter(tz_date(models.PrikhodSyrya.data_vremya) == den)
     if vid_syrya_id:
         q = q.filter_by(vid_syrya_id=vid_syrya_id)
     return q.order_by(models.PrikhodSyrya.data_vremya.desc()).all()
@@ -55,7 +50,7 @@ def itog_prikhod(den: date = None, db: Session = Depends(get_db)):
             func.count(models.PrikhodSyrya.id).label("mashin")
         )
         .join(models.VidSyrya, models.PrikhodSyrya.vid_syrya_id == models.VidSyrya.id)
-        .filter(cast(models.PrikhodSyrya.data_vremya, Date) == den)
+        .filter(tz_date(models.PrikhodSyrya.data_vremya) == den)
         .group_by(models.VidSyrya.name)
         .all()
     )

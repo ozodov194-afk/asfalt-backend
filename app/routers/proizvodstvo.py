@@ -8,6 +8,11 @@ from app import models, schemas
 
 router = APIRouter()
 
+TZ = 'Asia/Tashkent'
+
+def tz_date(col):
+    return func.date(func.timezone(TZ, col))
+
 @router.post("/", response_model=schemas.ProizvodstvoOut, summary="Добавить партию асфальта")
 def create_proizvodstvo(data: schemas.ProizvodstvoCreate, db: Session = Depends(get_db)):
     partiya = models.Proizvodstvo(**data.model_dump())
@@ -17,14 +22,10 @@ def create_proizvodstvo(data: schemas.ProizvodstvoCreate, db: Session = Depends(
     return partiya
 
 @router.get("/", response_model=List[schemas.ProizvodstvoOut], summary="Список партий")
-def get_proizvodstvo(
-    den: date = None,
-    marka_id: int = None,
-    db: Session = Depends(get_db)
-):
+def get_proizvodstvo(den: date = None, marka_id: int = None, db: Session = Depends(get_db)):
     q = db.query(models.Proizvodstvo)
     if den:
-        q = q.filter(cast(models.Proizvodstvo.data_vremya, Date) == den)
+        q = q.filter(tz_date(models.Proizvodstvo.data_vremya) == den)
     if marka_id:
         q = q.filter_by(marka_id=marka_id)
     return q.order_by(models.Proizvodstvo.data_vremya.desc()).all()
@@ -41,16 +42,8 @@ def itog_proizvodstvo(den: date = None, db: Session = Depends(get_db)):
             func.avg(models.Proizvodstvo.temperatura).label("avg_temp")
         )
         .join(models.MarkaAsfalta)
-        .filter(cast(models.Proizvodstvo.data_vremya, Date) == den)
+        .filter(tz_date(models.Proizvodstvo.data_vremya) == den)
         .group_by(models.MarkaAsfalta.name)
         .all()
     )
-    return [
-        {
-            "marka": r.name,
-            "itogo_kg": round(r.itogo_kg, 1),
-            "partiy": r.partiy,
-            "avg_temperatura": round(r.avg_temp, 1) if r.avg_temp else None
-        }
-        for r in rows
-    ]
+    return [{"marka": r.name, "itogo_kg": round(r.itogo_kg, 1), "partiy": r.partiy, "avg_temperatura": round(r.avg_temp, 1) if r.avg_temp else None} for r in rows]
