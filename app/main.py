@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from app.routers import prikhod, raskhod, proizvodstvo, prodazhi, sklad, dashboard
@@ -18,12 +20,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 app.include_router(prikhod.router,       prefix="/api/prikhod",      tags=["Приход сырья"])
 app.include_router(raskhod.router,       prefix="/api/raskhod",      tags=["Расход сырья"])
 app.include_router(proizvodstvo.router,  prefix="/api/proizvodstvo",  tags=["Производство"])
 app.include_router(prodazhi.router,      prefix="/api/prodazhi",      tags=["Продажи"])
 app.include_router(sklad.router,         prefix="/api/sklad",         tags=["Склад"])
 app.include_router(dashboard.router,     prefix="/api/dashboard",     tags=["Дашборд"])
+
+@app.get("/ui")
+def ui():
+    return FileResponse("static/asfalt_zavod.html")
 
 @app.get("/")
 def root():

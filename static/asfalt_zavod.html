@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>АсфальтУчёт — Система управления заводом</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0f1117;--bg2:#161a24;--bg3:#1e2330;--border:#2a3045;--text:#e8eaf0;--text2:#8b92a8;--text3:#555e75;--accent:#f5a623;--accent2:#e8891a;--green:#3ecf8e;--green-bg:rgba(62,207,142,0.08);--red:#f26b5b;--blue:#5b8af2;--blue-bg:rgba(91,138,242,0.08);--purple:#a77bf7;--purple-bg:rgba(167,123,247,0.08);--amber:#f5a623;--amber-bg:rgba(245,166,35,0.08);--sidebar-w:220px;--radius:10px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex}
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform .25s}
+.sidebar-logo{padding:20px 18px 16px;border-bottom:1px solid var(--border)}
+.logo-mark{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--accent);letter-spacing:.04em}
+.logo-sub{font-size:11px;color:var(--text3);margin-top:3px;font-family:'IBM Plex Mono',monospace}
+.nav-section{padding:14px 10px 4px}
+.nav-label{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;padding:0 8px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13.5px;color:var(--text2);transition:all .15s;margin-bottom:1px;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--amber-bg);color:var(--accent)}
+.sidebar-footer{margin-top:auto;padding:14px 18px;border-top:1px solid var(--border);font-size:12px;color:var(--text3)}
+.role-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;font-family:'IBM Plex Mono',monospace;margin-bottom:6px}
+.role-op{background:var(--green-bg);color:var(--green)}
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh}
+.topbar{height:56px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:50}
+.topbar-title{font-size:15px;font-weight:500}
+.topbar-right{display:flex;align-items:center;gap:14px}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text3)}
+.live-dot{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)}
+.live-dot::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.content{padding:28px;display:none}
+.content.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.1em}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px}
+.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+.s-label{font-size:12px;color:var(--text3);margin-bottom:6px}
+.s-val{font-size:24px;font-weight:600;font-family:'IBM Plex Mono',monospace}
+.s-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.s-green{color:var(--green)}.s-amber{color:var(--amber)}.s-blue{color:var(--blue)}
+.weight-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.wbox{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.wbox-label{font-size:11px;color:var(--text3);margin-bottom:6px}
+.wbox-val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:500;color:var(--text)}
+.wbox-unit{font-size:13px;color:var(--text3);margin-left:4px}
+.wbox-live{font-size:11px;color:var(--green);margin-top:4px;display:flex;align-items:center;gap:5px}
+.wbox-live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.8s infinite}
+.netto-box{background:rgba(91,138,242,.1);border:1px solid rgba(91,138,242,.25);border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.netto-label{font-size:13px;color:var(--blue)}
+.netto-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500;color:var(--blue)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;color:var(--text3)}
+.field input,.field select{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:13px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;outline:none;transition:border-color .15s}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field select option{background:var(--bg2)}
+.auto-found{background:var(--green-bg);border:1px solid rgba(62,207,142,.2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--green);margin-top:4px;display:none}
+.btn{padding:9px 18px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:'IBM Plex Sans',sans-serif;transition:all .15s}
+.btn-primary{background:var(--accent);color:#0f1117}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:var(--bg3);border:1px solid var(--border);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-row{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10.5px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:0 10px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+.tbl-total{display:flex;justify-content:flex-end;gap:16px;padding:10px 10px 0;border-top:1px solid var(--border);margin-top:2px;font-size:13px}
+.tbl-total span:first-child{color:var(--text3)}
+.tbl-total span:last-child{font-family:'IBM Plex Mono',monospace;font-weight:500}
+.tag{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500}
+.tag-green{background:var(--green-bg);color:var(--green)}
+.tag-purple{background:var(--purple-bg);color:var(--purple)}
+.dev-ok{color:var(--green);font-family:'IBM Plex Mono',monospace}
+.dev-warn{color:var(--amber);font-family:'IBM Plex Mono',monospace}
+.stock-item{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+.stock-item:last-child{border-bottom:none}
+.stock-name{font-size:13px;min-width:120px}
+.stock-bar-wrap{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.stock-bar{height:100%;border-radius:3px}
+.stock-qty{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;min-width:65px;text-align:right}
+.prod-bar-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.prod-bar-row:last-child{margin-bottom:0}
+.prod-name{font-size:13px;min-width:110px;color:var(--text2)}
+.prod-bar-wrap{flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.prod-bar{height:100%;border-radius:4px}
+.prod-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;min-width:55px;text-align:right}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.act-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.act-row:last-child{border-bottom:none}
+.act-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.act-text{font-size:13px;margin-bottom:3px}
+.act-time{font-size:12px;color:var(--text3);font-family:'IBM Plex Mono',monospace}
+.warn-box{background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.25);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--amber);display:flex;align-items:center;gap:10px;margin-top:12px}
+.cmp-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-radius:8px;padding:10px 14px;margin-top:10px;font-size:13px}
+.section-title{font-size:18px;font-weight:600;margin-bottom:4px}
+.section-sub{font-size:13px;color:var(--text3);margin-bottom:22px}
+.sum-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-radius:8px;padding:12px 16px;margin-top:10px}
+.sum-label{font-size:13px;color:var(--text3)}
+.sum-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500;color:var(--green)}
+.hamburger{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:4px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
+.loading{color:var(--text3);font-size:13px;padding:20px;text-align:center}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .hamburger{display:block}
+  .overlay.open{display:block}
+  .content{padding:16px}
+  .weight-row{grid-template-columns:1fr}
+  .two-col{grid-template-columns:1fr}
+  .topbar{padding:0 16px}
+}
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">⬡ ASFALT.UZ</div>
+    <div class="logo-sub">v2.0 — с backend</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Оператор</div>
+    <button class="nav-item" onclick="showPage('prikhod')"><span>↓</span> Приход сырья</button>
+    <button class="nav-item" onclick="showPage('raskhod')"><span>↑</span> Расход сырья</button>
+    <button class="nav-item" onclick="showPage('proizvodstvo')"><span>⬡</span> Производство</button>
+    <button class="nav-item" onclick="showPage('prodazhi')"><span>🚛</span> Продажи</button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Директор</div>
+    <button class="nav-item active" onclick="showPage('dashboard')"><span>◈</span> Дашборд</button>
+    <button class="nav-item" onclick="showPage('otchety')"><span>≡</span> Отчёты</button>
+    <button class="nav-item" onclick="showPage('spravochniki')"><span>⊞</span> Справочники</button>
+  </div>
+  <div class="sidebar-footer">
+    <div class="role-pill role-op">Оператор весов</div>
+    <div style="font-size:11px;margin-top:4px">Ташкент, Завод №1</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <span class="topbar-title" id="topbarTitle">Дашборд директора</span>
+    </div>
+    <div class="topbar-right">
+      <span class="live-dot" id="vesyStatus">Весы онлайн</span>
+      <span class="mono" id="clock">--:--:--</span>
+    </div>
+  </div>
+
+  <!-- ══ ДАШБОРД ══ -->
+  <div class="content active" id="page-dashboard">
+    <div class="section-title">Дашборд</div>
+    <div class="section-sub" id="dash-sub">Загрузка данных...</div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="s-label">Приход сырья</div><div class="s-val s-blue" id="d-prikhod-kg">—</div><div class="s-sub" id="d-prikhod-sub">машин</div></div>
+      <div class="stat-card"><div class="s-label">Произведено</div><div class="s-val" id="d-proizvod-kg">—</div><div class="s-sub">сегодня</div></div>
+      <div class="stat-card"><div class="s-label">Отгружено</div><div class="s-val s-green" id="d-otgr-kg">—</div><div class="s-sub" id="d-otgr-sub">покупателей</div></div>
+      <div class="stat-card"><div class="s-label">Выручка</div><div class="s-val s-amber" id="d-vyruchka">—</div><div class="s-sub">сум, сегодня</div></div>
+    </div>
+
+    <!-- Предупреждения -->
+    <div class="warn-box" id="dash-warn" style="display:none">⚠ <span id="dash-warn-text"></span></div>
+
+    <!-- Приход таблица -->
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">↓ Приход сырья сегодня</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Время</th><th>Вид сырья</th><th>Поставщик</th><th>Авто</th><th style="text-align:right">Нетто, кг</th></tr></thead>
+        <tbody id="dash-prikhod-tbody"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
+      </table></div>
+      <div class="tbl-total"><span>Итого:</span><span id="dash-prikhod-total">—</span></div>
+    </div>
+
+    <!-- Расход таблица -->
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">↑ Расход сырья сегодня</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Время</th><th>Вид сырья</th><th>Марка</th><th style="text-align:right">Факт, кг</th><th style="text-align:right">Откл.</th></tr></thead>
+        <tbody id="dash-raskhod-tbody"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
+      </table></div>
+      <div class="tbl-total"><span>Итого расход:</span><span id="dash-raskhod-total">—</span></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-label" style="margin-bottom:12px">Остатки сырья</div>
+        <div id="dash-ostatki"><div class="loading">Загрузка...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-label" style="margin-bottom:12px">Производство по маркам</div>
+        <div id="dash-prod-marki"><div class="loading">Загрузка...</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Последние операции</div>
+      <div id="dash-activity"><div class="loading">Загрузка...</div></div>
+    </div>
+  </div>
+
+  <!-- ══ ПРИХОД СЫРЬЯ ══ -->
+  <div class="content" id="page-prikhod">
+    <div class="section-title">Приход сырья</div>
+    <div class="section-sub">Оператор весов — новая запись</div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Данные с весов</div>
+      <div class="weight-row">
+        <div class="wbox">
+          <div class="wbox-label">Брутто (машина с грузом)</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="wbox-val" id="p-brutto">0</span><span class="wbox-unit">кг</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onclick="fixWeight('p-brutto')">📍 С весов</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onclick="manualWeight('p-brutto')">✏️ Вручную</button>
+          </div>
+        </div>
+        <div class="wbox">
+          <div class="wbox-label">Тара (пустая машина)</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="wbox-val" id="p-tara">0</span><span class="wbox-unit">кг</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onclick="fixWeight('p-tara')">📍 С весов</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onclick="manualWeight('p-tara')">✏️ Вручную</button>
+          </div>
+        </div>
+      </div>
+      <div class="netto-box">
+        <span class="netto-label">= Нетто (фактический груз)</span>
+        <span class="netto-val" id="p-netto">0 кг</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Информация о поставке</div>
+      <div class="form-grid">
+        <div class="field"><label>Вид сырья</label><select id="p-vid"><option value="">Загрузка...</option></select></div>
+        <div class="field"><label>Поставщик</label><select id="p-post"><option value="">Загрузка...</option></select></div>
+        <div class="field">
+          <label>Гос. номер авто</label>
+          <input id="p-gos" type="text" placeholder="01А123АА" oninput="searchAvtoP()"/>
+          <div class="auto-found" id="p-avto-found"></div>
+          <input type="hidden" id="p-avto-id"/>
+        </div>
+        <div class="field"><label>Номер накладной</label><input id="p-nakladnaya" type="text" placeholder="НК-00451"/></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="printTalon()">🖨 Печать талона</button>
+        <button class="btn btn-primary" onclick="savePrikhod()">✓ Сохранить приход</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Приходы сегодня</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Время</th><th>Сырьё</th><th>Поставщик</th><th>Авто</th><th style="text-align:right">Нетто, кг</th></tr></thead>
+        <tbody id="prikhod-tbody"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══ РАСХОД СЫРЬЯ ══ -->
+  <div class="content" id="page-raskhod">
+    <div class="section-title">Расход сырья</div>
+    <div class="section-sub">Оператор весов — подача в производство</div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Остатки сырья на складе</div>
+      <div id="raskhod-ostatki"><div class="loading">Загрузка...</div></div>
+      <div class="warn-box" id="raskhod-warn" style="display:none">⚠ <span></span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Новый расход — подача в производство</div>
+      <div class="form-grid">
+        <div class="field"><label>Вид сырья</label><select id="r-vid"><option value="">Загрузка...</option></select></div>
+        <div class="field"><label>Марка асфальта</label><select id="r-marka"><option value="">Загрузка...</option></select></div>
+      </div>
+      <div style="margin-top:4px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Фактический вес подачи</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="wbox" style="display:inline-flex;align-items:center;gap:14px;min-width:200px">
+            <div><span class="wbox-val" id="r-fakt">0</span><span class="wbox-unit">кг</span></div>
+          </div>
+          <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="fixWeight('r-fakt')">📍 С весов</button>
+          <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="manualWeight('r-fakt')">✏️ Вручную</button>
+        </div>
+      </div>
+      <div class="cmp-row">
+        <span style="color:var(--text3)">Норма по рецептуре</span>
+        <span id="r-norma" style="font-family:'IBM Plex Mono',monospace;font-weight:500">—</span>
+        <span id="r-otkl" class="dev-ok">введите вес</span>
+      </div>
+      <div class="btn-row">
+        <span></span>
+        <button class="btn btn-primary" onclick="saveRaskhod()">✓ Сохранить расход</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Расходы сегодня</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Время</th><th>Сырьё</th><th>Марка</th><th style="text-align:right">Факт, кг</th><th style="text-align:right">Откл.</th></tr></thead>
+        <tbody id="raskhod-tbody"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══ ПРОИЗВОДСТВО ══ -->
+  <div class="content" id="page-proizvodstvo">
+    <div class="section-title">Производство асфальта</div>
+    <div class="section-sub">Оператор весов — фиксация партии</div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="s-label">Произведено сегодня</div><div class="s-val" id="pr-total-kg">—</div><div class="s-sub">тонн</div></div>
+      <div class="stat-card"><div class="s-label">Партий за день</div><div class="s-val s-blue" id="pr-total-partiy">—</div><div class="s-sub">замесов</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Новая партия — данные с весов</div>
+      <div class="form-grid">
+        <div class="field"><label>Марка асфальта</label><select id="pr-marka"><option value="">Загрузка...</option></select></div>
+        <div class="field"><label>Смена</label><select id="pr-smena"><option value="1">Смена 1 (06:00–18:00)</option><option value="2">Смена 2 (18:00–06:00)</option></select></div>
+      </div>
+      <div style="margin-top:4px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Вес партии</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="wbox" style="display:inline-flex;align-items:center;gap:14px;min-width:200px">
+            <div><span class="wbox-val" id="pr-ves">0</span><span class="wbox-unit">кг</span></div>
+          </div>
+          <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="fixWeight('pr-ves')">📍 С весов</button>
+          <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="manualWeight('pr-ves')">✏️ Вручную</button>
+        </div>
+      </div>
+      <div class="form-grid" style="margin-top:14px">
+        <div class="field"><label>Время начала</label><input id="pr-nach" type="text" placeholder="10:24"/></div>
+        <div class="field"><label>Время окончания</label><input id="pr-kon" type="text" placeholder="10:31"/></div>
+        <div class="field"><label>Температура, °C</label><input id="pr-temp" type="number" placeholder="165"/></div>
+      </div>
+      <div class="btn-row">
+        <span></span>
+        <button class="btn btn-primary" onclick="saveProizvodstvo()">✓ Сохранить партию</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Партии сегодня</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Время</th><th>Марка</th><th>Смена</th><th style="text-align:center">Темп. °C</th><th style="text-align:right">Вес, кг</th></tr></thead>
+        <tbody id="prod-tbody"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══ ПРОДАЖИ ══ -->
+  <div class="content" id="page-prodazhi">
+    <div class="section-title">Продажи / Отгрузка</div>
+    <div class="section-sub">Оператор весов — новая отгрузка</div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Данные с весов</div>
+      <div class="weight-row">
+        <div class="wbox">
+          <div class="wbox-label">Брутто (гружёная машина)</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="wbox-val" id="pd-brutto">0</span><span class="wbox-unit">кг</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onclick="fixWeight('pd-brutto')">📍 С весов</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onclick="manualWeight('pd-brutto')">✏️ Вручную</button>
+          </div>
+        </div>
+        <div class="wbox">
+          <div class="wbox-label">Тара (пустая машина)</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="wbox-val" id="pd-tara">0</span><span class="wbox-unit">кг</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onclick="fixWeight('pd-tara')">📍 С весов</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onclick="manualWeight('pd-tara')">✏️ Вручную</button>
+          </div>
+        </div>
+      </div>
+      <div class="netto-box">
+        <span class="netto-label">= Нетто отгрузки</span>
+        <span class="netto-val" id="pd-netto">0 кг</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Покупатель и автомобиль</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Гос. номер авто</label>
+          <input id="pd-gos" type="text" placeholder="20В450ВА" oninput="searchAvtoPD()"/>
+          <div class="auto-found" id="pd-avto-found"></div>
+          <input type="hidden" id="pd-avto-id"/>
+        </div>
+        <div class="field"><label>Покупатель</label><select id="pd-pokup"><option value="">Загрузка...</option></select></div>
+        <div class="field"><label>Марка асфальта</label><select id="pd-marka"><option value="">Загрузка...</option></select></div>
+        <div class="field"><label>Цена за тонну, сум</label><input id="pd-tsena" type="number" placeholder="850000" oninput="calcSumma()"/></div>
+      </div>
+      <div class="sum-row">
+        <span class="sum-label">Сумма сделки</span>
+        <span class="sum-val" id="pd-summa">—</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="printNakladnaya()">🖨 Печать накладной</button>
+        <button class="btn btn-primary" onclick="saveProdazha()">✓ Сохранить отгрузку</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Отгрузки сегодня</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Время</th><th>Покупатель</th><th>Авто</th><th>Марка</th><th style="text-align:right">Нетто, кг</th><th style="text-align:right">Сумма</th></tr></thead>
+        <tbody id="prodazhi-tbody"><tr><td colspan="6" class="loading">Загрузка...</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══ ОТЧЁТЫ ══ -->
+  <div class="content" id="page-otchety">
+    <div class="section-title">Отчёты</div>
+    <div class="section-sub">Аналитика за период</div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-label" style="margin-bottom:12px">Период</div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div class="field"><label>Дата с</label><input type="date" id="ot-date-from" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:13px;color:var(--text);outline:none"/></div>
+        <div class="field"><label>Дата по</label><input type="date" id="ot-date-to" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:13px;color:var(--text);outline:none"/></div>
+        <div style="margin-top:18px;display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="otSetPeriod('today')">Сегодня</button>
+          <button class="btn btn-ghost" onclick="otSetPeriod('week')">Неделя</button>
+          <button class="btn btn-ghost" onclick="otSetPeriod('month')">Месяц</button>
+          <button class="btn btn-primary" onclick="loadOtchety()">🔄 Обновить</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="s-label">Приход сырья</div><div class="s-val s-blue" id="ot-prikhod">—</div><div class="s-sub">за период</div></div>
+      <div class="stat-card"><div class="s-label">Произведено</div><div class="s-val" id="ot-prod">—</div><div class="s-sub">за период</div></div>
+      <div class="stat-card"><div class="s-label">Продано</div><div class="s-val s-green" id="ot-prodano">—</div><div class="s-sub">за период</div></div>
+      <div class="stat-card"><div class="s-label">Выручка</div><div class="s-val s-amber" id="ot-vyr">—</div><div class="s-sub">сум</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Продажи по покупателям</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>Покупатель</th><th style="text-align:right">Тонн</th><th style="text-align:right">Рейсов</th><th style="text-align:right">Сумма, млн сум</th></tr></thead>
+        <tbody id="otchety-tbody"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
+      </table></div>
+      <div class="tbl-total"><span>Итого:</span><span id="otchety-total">—</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label" style="margin-bottom:12px">Приходы сырья за период</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Дата</th><th>Вид сырья</th><th>Поставщик</th><th>Авто</th><th style="text-align:right">Нетто, кг</th></tr></thead>
+        <tbody id="ot-prikhod-tbody"><tr><td colspan="5" class="loading">—</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="loadOtchety()">🔄 Обновить</button>
+      <button class="btn btn-ghost" onclick="exportExcel()">📥 Экспорт Excel</button>
+    </div>
+  </div>
+  <!-- ══ СПРАВОЧНИКИ ══ -->
+  <div class="content" id="page-spravochniki">
+    <div class="section-title">Справочники</div>
+    <div class="section-sub">Управление поставщиками, видами сырья, покупателями, марками и автомобилями</div>
+
+    <!-- Табы -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px" id="sprav-tabs">
+      <button class="btn btn-primary" id="st-postavshiki" onclick="spravTab('postavshiki')">Поставщики</button>
+      <button class="btn btn-ghost" id="st-vidy" onclick="spravTab('vidy')">Виды сырья</button>
+      <button class="btn btn-ghost" id="st-pokupateli" onclick="spravTab('pokupateli')">Покупатели</button>
+      <button class="btn btn-ghost" id="st-marki" onclick="spravTab('marki')">Марки асфальта</button>
+      <button class="btn btn-ghost" id="st-avto" onclick="spravTab('avto')">Автомобили</button>
+    </div>
+
+    <!-- ПОСТАВЩИКИ -->
+    <div id="sprav-postavshiki">
+      <div class="card">
+        <div class="card-head"><div class="card-label">Добавить поставщика</div></div>
+        <div class="form-grid">
+          <div class="field"><label>Название *</label><input id="sp-name" placeholder="ООО ТрансБитум"/></div>
+          <div class="field"><label>Телефон</label><input id="sp-tel" placeholder="+998 90 000 00 00"/></div>
+          <div class="field"><label>ИНН</label><input id="sp-inn" placeholder="123456789"/></div>
+        </div>
+        <div class="btn-row"><span></span><button class="btn btn-primary" onclick="savePostavshik()">+ Добавить</button></div>
+      </div>
+      <div class="card">
+        <div class="card-label" style="margin-bottom:12px">Список поставщиков</div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>#</th><th>Название</th><th>Телефон</th><th>ИНН</th><th>Дата</th><th></th></tr></thead>
+          <tbody id="sp-tbody"><tr><td colspan="6" class="loading">Загрузка...</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ВИДЫ СЫРЬЯ -->
+    <div id="sprav-vidy" style="display:none">
+      <div class="card">
+        <div class="card-head"><div class="card-label">Добавить вид сырья</div></div>
+        <div class="form-grid">
+          <div class="field"><label>Название *</label><input id="sv-name" placeholder="Битум БНД 60/90"/></div>
+          <div class="field"><label>Ед. измерения</label>
+            <select id="sv-ed"><option value="кг">кг</option><option value="т">т</option><option value="л">л</option></select>
+          </div>
+          <div class="field"><label>Мин. остаток (кг)</label><input id="sv-min" type="number" placeholder="1000"/></div>
+        </div>
+        <div class="btn-row"><span></span><button class="btn btn-primary" onclick="saveVidSyrya()">+ Добавить</button></div>
+      </div>
+      <div class="card">
+        <div class="card-label" style="margin-bottom:12px">Список видов сырья</div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>#</th><th>Название</th><th>Ед. изм.</th><th>Мин. остаток</th><th></th></tr></thead>
+          <tbody id="sv-tbody"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ПОКУПАТЕЛИ -->
+    <div id="sprav-pokupateli" style="display:none">
+      <div class="card">
+        <div class="card-head"><div class="card-label">Добавить покупателя</div></div>
+        <div class="form-grid">
+          <div class="field"><label>Название *</label><input id="sk-name" placeholder="ООО ДорСтрой"/></div>
+          <div class="field"><label>Телефон</label><input id="sk-tel" placeholder="+998 90 000 00 00"/></div>
+          <div class="field"><label>ИНН</label><input id="sk-inn" placeholder="123456789"/></div>
+          <div class="field"><label>Адрес</label><input id="sk-adres" placeholder="г. Ташкент, ул..."/></div>
+        </div>
+        <div class="btn-row"><span></span><button class="btn btn-primary" onclick="savePokupatel()">+ Добавить</button></div>
+      </div>
+      <div class="card">
+        <div class="card-label" style="margin-bottom:12px">Список покупателей</div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>#</th><th>Название</th><th>Телефон</th><th>ИНН</th><th>Адрес</th><th></th></tr></thead>
+          <tbody id="sk-tbody"><tr><td colspan="6" class="loading">Загрузка...</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- МАРКИ АСФАЛЬТА -->
+    <div id="sprav-marki" style="display:none">
+      <div class="card">
+        <div class="card-head"><div class="card-label">Добавить марку асфальта</div></div>
+        <div class="form-grid">
+          <div class="field"><label>Название *</label><input id="sm-name" placeholder="АБВ тип Б, крупнозернистый"/></div>
+          <div class="field"><label>Код</label><input id="sm-kod" placeholder="ABV-B"/></div>
+        </div>
+        <div class="btn-row"><span></span><button class="btn btn-primary" onclick="saveMarka()">+ Добавить</button></div>
+      </div>
+      <div class="card">
+        <div class="card-label" style="margin-bottom:12px">Список марок</div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>#</th><th>Название</th><th>Код</th><th></th></tr></thead>
+          <tbody id="sm-tbody"><tr><td colspan="4" class="loading">Загрузка...</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- АВТОМОБИЛИ -->
+    <div id="sprav-avto" style="display:none">
+      <div class="card">
+        <div class="card-head"><div class="card-label">Добавить автомобиль</div></div>
+        <div class="form-grid">
+          <div class="field"><label>Гос. номер *</label><input id="sa-gos" placeholder="01А123АА"/></div>
+          <div class="field"><label>Марка авто</label><input id="sa-marka" placeholder="КАМАЗ 65115"/></div>
+          <div class="field"><label>Грузоподъёмность (кг)</label><input id="sa-gruz" type="number" placeholder="15000"/></div>
+          <div class="field"><label>Поставщик</label>
+            <select id="sa-post"><option value="">— нет —</option></select>
+          </div>
+          <div class="field"><label>Покупатель</label>
+            <select id="sa-pokup"><option value="">— нет —</option></select>
+          </div>
+        </div>
+        <div class="btn-row"><span></span><button class="btn btn-primary" onclick="saveAvto()">+ Добавить</button></div>
+      </div>
+      <div class="card">
+        <div class="card-label" style="margin-bottom:12px">Список автомобилей</div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>#</th><th>Гос. номер</th><th>Марка</th><th>Грузоподъём.</th><th>Поставщик</th><th>Покупатель</th><th></th></tr></thead>
+          <tbody id="sa-tbody"><tr><td colspan="7" class="loading">Загрузка...</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- TOAST -->
+<div id="toast" style="display:none;position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.4);max-width:360px"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  НАСТРОЙКА — поменяй если backend на другом компьютере
+// ══════════════════════════════════════════════════════
+const API = 'https://web-production-fdeb0.up.railway.app/api';
+
+// ── Живые данные с весов (хранится после фиксации) ──
+let fixedWeights = { 'p-brutto':0, 'p-tara':0, 'pd-brutto':0, 'pd-tara':0, 'r-fakt':0, 'pr-ves':0 };
+let liveWeight = 0;
+
+// ── ЧАСЫ ──
+function updateClock(){
+  const n=new Date();
+  document.getElementById('clock').textContent=
+    [n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+}
+updateClock(); setInterval(updateClock,1000);
+
+// ── НАВИГАЦИЯ ──
+const TITLES={dashboard:'Дашборд директора',prikhod:'Приход сырья',raskhod:'Расход сырья',proizvodstvo:'Производство асфальта',prodazhi:'Продажи / Отгрузка',otchety:'Отчёты и аналитика',spravochniki:'Справочники'};
+function showPage(id){
+  document.querySelectorAll('.content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(e=>{
+    if(e.getAttribute('onclick')&&e.getAttribute('onclick').includes("'"+id+"'")) e.classList.add('active');
+  });
+  document.getElementById('topbarTitle').textContent=TITLES[id]||id;
+  closeSidebar();
+  if(id==='dashboard')    loadDashboard();
+  if(id==='prikhod')      loadPrikhod();
+  if(id==='raskhod')      loadRaskhod();
+  if(id==='proizvodstvo') loadProizvodstvo();
+  if(id==='prodazhi')     loadProdazhi();
+  if(id==='otchety'){ 
+    if(!document.getElementById('ot-date-from').value) otSetPeriod('today');
+    else loadOtchety();
+  }
+  if(id==='spravochniki') spravTab('postavshiki');
+}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('open')}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open')}
+
+// ── API ПОМОЩНИКИ ──
+async function api(url){
+  try{const r=await fetch(API+url);if(!r.ok)throw new Error(r.status);return await r.json();}
+  catch(e){console.error('API:',url,e.message);return null;}
+}
+async function apiPost(url,body){
+  try{
+    const r=await fetch(API+url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.detail||r.status);
+    return d;
+  }catch(e){showToast('Ошибка: '+e.message,false);return null;}
+}
+function fmt(v){return Math.round(v).toLocaleString('ru-RU')}
+function fmtT(v){return (v/1000).toFixed(1)+' т'}
+function fmtMln(v){return (v/1000000).toFixed(1)+' млн'}
+function timeStr(dt){return new Date(dt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
+function today(){return new Date().toISOString().split('T')[0]}
+function showToast(msg,ok=true){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.background=ok?'var(--green)':'var(--red)';t.style.color=ok?'#0f1117':'#fff';
+  t.style.display='block';setTimeout(()=>t.style.display='none',4000);
+}
+
+// ── ВЕСЫ: живое считывание ──
+async function pollVesy(){
+  const d=await api('/vesy/tekushiy-ves');
+  if(d!=null){
+    liveWeight=d.ves_kg;
+    // обновляем все активные поля весов
+    ['p-brutto','p-tara','pd-brutto','pd-tara','r-fakt','pr-ves'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el&&el.dataset.live==='1') el.textContent=fmt(liveWeight);
+    });
+    document.getElementById('vesyStatus').textContent='Весы онлайн';
+  } else {
+    document.getElementById('vesyStatus').textContent='Весы офлайн';
+  }
+}
+setInterval(pollVesy,2000);
+
+// 📍 Кнопка фиксации — запоминает текущий вес
+function fixWeight(elId){
+  const el=document.getElementById(elId);
+  if(el){
+    el.textContent=fmt(liveWeight);
+    el.dataset.live='0'; // останавливаем обновление этого поля
+    fixedWeights[elId]=liveWeight;
+    // пересчитываем нетто если нужно
+    if(elId==='p-brutto'||elId==='p-tara') calcNettoP();
+    if(elId==='pd-brutto'||elId==='pd-tara'){calcNettoPD();calcSumma();}
+    showToast('Вес зафиксирован: '+fmt(liveWeight)+' кг');
+  }
+}
+function getW(elId){return parseFloat(document.getElementById(elId).textContent.replace(/\s/g,''))||0}
+
+function calcNettoP(){
+  const n=getW('p-brutto')-getW('p-tara');
+  document.getElementById('p-netto').textContent=fmt(Math.max(0,n))+' кг';
+}
+function calcNettoPD(){
+  const n=getW('pd-brutto')-getW('pd-tara');
+  document.getElementById('pd-netto').textContent=fmt(Math.max(0,n))+' кг';
+}
+function calcSumma(){
+  const netto=getW('pd-brutto')-getW('pd-tara');
+  const tsena=parseFloat(document.getElementById('pd-tsena').value)||0;
+  if(netto>0&&tsena>0){
+    const summa=(netto/1000)*tsena;
+    document.getElementById('pd-summa').textContent=fmt(summa)+' сум';
+  }
+}
+
+// ── СПРАВОЧНИКИ ──
+let _spravy=false;
+async function loadSpravy(){
+  if(_spravy)return;
+  const[vidy,post,pokup,marki,avto]=await Promise.all([
+    api('/sklad/vidy-syrya'),api('/sklad/postavshiki'),
+    api('/sklad/pokupateli'),api('/sklad/marki-asfalta'),api('/sklad/avto')
+  ]);
+  function fill(id,items,vk='id',lk='name'){
+    const el=document.getElementById(id);
+    if(!el||!items)return;
+    el.innerHTML=items.map(i=>`<option value="${i[vk]}">${i[lk]}</option>`).join('');
+  }
+  fill('p-vid',vidy);fill('p-post',post);
+  fill('r-vid',vidy);fill('r-marka',marki);
+  fill('pr-marka',marki);
+  fill('pd-pokup',pokup);fill('pd-marka',marki);
+  _spravy=true;
+}
+
+// ── ПОИСК АВТО ──
+async function searchAvtoP(){
+  const n=document.getElementById('p-gos').value.replace(/\s/g,'').toUpperCase();
+  if(n.length<4)return;
+  const d=await api('/prodazhi/avto/'+n);
+  const el=document.getElementById('p-avto-found');
+  if(d){el.style.display='flex';el.textContent='✓ '+d.pokupatel;}
+  else{el.style.display='none';}
+}
+async function searchAvtoPD(){
+  const n=document.getElementById('pd-gos').value.replace(/\s/g,'').toUpperCase();
+  if(n.length<4)return;
+  const d=await api('/prodazhi/avto/'+n);
+  const el=document.getElementById('pd-avto-found');
+  if(d){
+    el.style.display='flex';el.textContent='✓ '+d.pokupatel;
+    if(d.pokupatel_id)document.getElementById('pd-pokup').value=d.pokupatel_id;
+    document.getElementById('pd-avto-id').value=d.avto_id;
+  }else{el.style.display='none';}
+}
+
+// ══ ДАШБОРД ══
+async function loadDashboard(){
+  const d=await api('/dashboard/segodnya');
+  if(!d)return;
+
+  const now=new Date().toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('dash-sub').textContent='Сегодня, '+now+' — обновлено';
+
+  document.getElementById('d-prikhod-kg').textContent=fmtT(d.prikhod.itogo_kg);
+  document.getElementById('d-prikhod-sub').textContent=d.prikhod.mashin+' машин';
+  document.getElementById('d-proizvod-kg').textContent=fmtT(d.proizvodstvo.itogo_kg);
+  document.getElementById('d-otgr-kg').textContent=fmtT(d.prodazhi.itogo_kg);
+  document.getElementById('d-otgr-sub').textContent=d.prodazhi.pokupatelei+' покупателей';
+  document.getElementById('d-vyruchka').textContent=fmtMln(d.prodazhi.vyruchka);
+
+  // Предупреждения
+  if(d.preduprejdeniya&&d.preduprejdeniya.length){
+    document.getElementById('dash-warn').style.display='flex';
+    document.getElementById('dash-warn-text').textContent=d.preduprejdeniya.join(' | ');
+  }else document.getElementById('dash-warn').style.display='none';
+
+  // Таблица приходов
+  const tb1=document.getElementById('dash-prikhod-tbody');
+  const pr=await api('/prikhod/?den='+today());
+  if(tb1) tb1.innerHTML=pr&&pr.length?pr.map(r=>`
+    <tr>
+      <td class="mono">${timeStr(r.data_vremya)}</td>
+      <td>${r.vid_syrya?.name||'—'}</td>
+      <td style="color:var(--text3)">${r.postavshik?.name||'—'}</td>
+      <td style="color:var(--text3)">${r.avto?.gos_nomer||'—'}</td>
+      <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.netto_kg)}</td>
+    </tr>`).join(''):'<tr><td colspan="5" class="loading">Нет данных сегодня</td></tr>';
+  const prTotal=pr?pr.reduce((s,r)=>s+r.netto_kg,0):0;
+  document.getElementById('dash-prikhod-total').textContent=fmt(prTotal)+' кг';
+
+  // Таблица расходов
+  const tb2=document.getElementById('dash-raskhod-tbody');
+  const ra=await api('/raskhod/?den='+today());
+  if(tb2) tb2.innerHTML=ra&&ra.length?ra.map(r=>{
+    const dev=r.otklonenie_pct;
+    const cls=dev!=null?(Math.abs(dev)>2?'dev-warn':'dev-ok'):'';
+    return`<tr>
+      <td class="mono">${timeStr(r.data_vremya)}</td>
+      <td>${r.vid_syrya?.name||'—'}</td>
+      <td><span class="tag tag-green">${r.marka?.name||'—'}</span></td>
+      <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.fakt_kg)}</td>
+      <td style="text-align:right" class="${cls}">${dev!=null?(dev>=0?'+':'')+dev+'%':'—'}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="5" class="loading">Нет данных сегодня</td></tr>';
+  const raTotal=ra?ra.reduce((s,r)=>s+r.fakt_kg,0):0;
+  document.getElementById('dash-raskhod-total').textContent=fmt(raTotal)+' кг';
+
+  // Остатки
+  const ost=document.getElementById('dash-ostatki');
+  if(ost&&d.ostatki) ost.innerHTML=d.ostatki.map(o=>{
+    const pct=Math.min(100,(o.kolichestvo_kg/(o.min_ostatok*10||50000))*100);
+    const c=o.preduprejdenie?'var(--amber)':'var(--green)';
+    return`<div class="stock-item">
+      <span class="stock-name">${o.name}</span>
+      <div class="stock-bar-wrap"><div class="stock-bar" style="width:${pct}%;background:${c}"></div></div>
+      <span class="stock-qty" style="color:${c}">${fmtT(o.kolichestvo_kg)}${o.preduprejdenie?' !':''}</span>
+    </div>`;
+  }).join('');
+
+  // Производство по маркам
+  const pm=document.getElementById('dash-prod-marki');
+  if(pm&&d.proizvodstvo.po_markam){
+    const mx=Math.max(...d.proizvodstvo.po_markam.map(m=>m.kg),1);
+    pm.innerHTML=d.proizvodstvo.po_markam.length?d.proizvodstvo.po_markam.map(m=>`
+      <div class="prod-bar-row">
+        <span class="prod-name">${m.marka}</span>
+        <div class="prod-bar-wrap"><div class="prod-bar" style="width:${(m.kg/mx*100).toFixed(0)}%;background:var(--green)"></div></div>
+        <span class="prod-val">${fmtT(m.kg)}</span>
+      </div>`).join(''):'<div class="loading">Нет данных</div>';
+  }
+
+  // Последние операции
+  const act=document.getElementById('dash-activity');
+  if(act&&d.poslednie_operatsii){
+    act.innerHTML=d.poslednie_operatsii.length?d.poslednie_operatsii.map(o=>{
+      const ico=o.tip==='prikhod'?{bg:'var(--blue-bg)',c:'var(--blue)',i:'↓'}:o.tip==='prodazha'?{bg:'var(--green-bg)',c:'var(--green)',i:'🚛'}:{bg:'var(--purple-bg)',c:'var(--purple)',i:'⬡'};
+      return`<div class="act-row">
+        <div class="act-icon" style="background:${ico.bg};color:${ico.c}">${ico.i}</div>
+        <div>
+          <div class="act-text">${o.tip==='prikhod'?'Приход':o.tip==='prodazha'?'Отгрузка':'Производство'} — <strong>${fmtT(o.netto_kg||0)}</strong></div>
+          <div class="act-time">${timeStr(o.vremya)}</div>
+        </div>
+      </div>`;
+    }).join(''):'<div class="loading">Нет операций сегодня</div>';
+  }
+}
+// Автообновление каждые 30 сек
+setInterval(()=>{if(document.getElementById('page-dashboard').classList.contains('active'))loadDashboard();},30000);
+
+// ══ ПРИХОД ══
+async function loadPrikhod(){
+  await loadSpravy();
+  const rows=await api('/prikhod/?den='+today());
+  const tb=document.getElementById('prikhod-tbody');
+  if(tb) tb.innerHTML=rows&&rows.length?rows.map(r=>`
+    <tr>
+      <td class="mono">${timeStr(r.data_vremya)}</td>
+      <td>${r.vid_syrya?.name||r.vid_syrya_id}</td>
+      <td style="color:var(--text3)">${r.postavshik?.name||r.postavshik_id}</td>
+      <td style="color:var(--text3)">${r.avto?.gos_nomer||'—'}</td>
+      <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.netto_kg)}</td>
+    </tr>`).join(''):'<tr><td colspan="5" class="loading">Нет приходов сегодня</td></tr>';
+}
+async function savePrikhod(){
+  const brutto=getW('p-brutto'), tara=getW('p-tara');
+  if(!brutto||!tara){showToast('Зафиксируйте брутто и тару!',false);return;}
+  const res=await apiPost('/prikhod/',{
+    vid_syrya_id:+document.getElementById('p-vid').value,
+    postavshik_id:+document.getElementById('p-post').value,
+    nomer_nakladnoy:document.getElementById('p-nakladnaya').value||null,
+    brutto_kg:brutto, tara_kg:tara, operator:'Оператор'
+  });
+  if(res){showToast('✓ Приход сохранён — нетто '+fmt(res.netto_kg)+' кг');loadPrikhod();}
+}
+
+// ══ РАСХОД ══
+async function loadRaskhod(){
+  await loadSpravy();
+  const ostatki=await api('/sklad/ostatki');
+  const el=document.getElementById('raskhod-ostatki');
+  if(el&&ostatki){
+    el.innerHTML=ostatki.map(o=>{
+      const pct=Math.min(100,(o.kolichestvo_kg/(o.min_ostatok*10||50000))*100);
+      const c=o.preduprejdenie?'var(--amber)':'var(--green)';
+      return`<div class="stock-item">
+        <span class="stock-name">${o.name}</span>
+        <div class="stock-bar-wrap"><div class="stock-bar" style="width:${pct}%;background:${c}"></div></div>
+        <span class="stock-qty" style="color:${c}">${fmt(o.kolichestvo_kg)} кг${o.preduprejdenie?' ⚠':''}</span>
+      </div>`;
+    }).join('');
+    const warns=ostatki.filter(o=>o.preduprejdenie);
+    const w=document.getElementById('raskhod-warn');
+    if(w){
+      if(warns.length){w.style.display='flex';w.querySelector('span').textContent=warns.map(o=>o.name+': '+fmt(o.kolichestvo_kg)+' кг').join(' | ');}
+      else w.style.display='none';
+    }
+  }
+  const rows=await api('/raskhod/?den='+today());
+  const tb=document.getElementById('raskhod-tbody');
+  if(tb) tb.innerHTML=rows&&rows.length?rows.map(r=>{
+    const dev=r.otklonenie_pct;
+    return`<tr>
+      <td class="mono">${timeStr(r.data_vremya)}</td>
+      <td>${r.vid_syrya?.name||r.vid_syrya_id}</td>
+      <td><span class="tag tag-green">${r.marka?.name||r.marka_id}</span></td>
+      <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.fakt_kg)}</td>
+      <td style="text-align:right" class="${dev!=null&&Math.abs(dev)>2?'dev-warn':'dev-ok'}">${dev!=null?(dev>=0?'+':'')+dev+'%':'—'}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="5" class="loading">Нет расходов сегодня</td></tr>';
+}
+async function saveRaskhod(){
+  const fakt=getW('r-fakt');
+  if(!fakt){showToast('Зафиксируйте вес с весов!',false);return;}
+  const res=await apiPost('/raskhod/',{
+    vid_syrya_id:+document.getElementById('r-vid').value,
+    marka_id:+document.getElementById('r-marka').value,
+    fakt_kg:fakt, operator:'Оператор'
+  });
+  if(res){showToast('✓ Расход сохранён — '+fmt(res.fakt_kg)+' кг');loadRaskhod();}
+}
+
+// ══ ПРОИЗВОДСТВО ══
+async function loadProizvodstvo(){
+  await loadSpravy();
+  const rows=await api('/proizvodstvo/?den='+today());
+  const tb=document.getElementById('prod-tbody');
+  if(tb) tb.innerHTML=rows&&rows.length?rows.map(r=>`
+    <tr>
+      <td class="mono">${timeStr(r.data_vremya)}</td>
+      <td><span class="tag tag-green">${r.marka?.name||r.marka_id}</span></td>
+      <td style="color:var(--text3)">${r.smena}</td>
+      <td style="text-align:center;font-family:'IBM Plex Mono',monospace">${r.temperatura||'—'}</td>
+      <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.ves_kg)}</td>
+    </tr>`).join(''):'<tr><td colspan="5" class="loading">Нет партий сегодня</td></tr>';
+  const itog=await api('/proizvodstvo/itog-za-den?den='+today());
+  if(itog){
+    document.getElementById('pr-total-kg').textContent=fmtT(itog.reduce((s,r)=>s+r.itogo_kg,0));
+    document.getElementById('pr-total-partiy').textContent=itog.reduce((s,r)=>s+r.partiy,0);
+  }
+}
+async function saveProizvodstvo(){
+  const ves=getW('pr-ves');
+  if(!ves){showToast('Зафиксируйте вес партии!',false);return;}
+  const res=await apiPost('/proizvodstvo/',{
+    marka_id:+document.getElementById('pr-marka').value,
+    smena:+document.getElementById('pr-smena').value,
+    ves_kg:ves,
+    temperatura:parseFloat(document.getElementById('pr-temp').value)||null,
+    vremya_nach:document.getElementById('pr-nach').value||null,
+    vremya_kon:document.getElementById('pr-kon').value||null,
+    operator:'Оператор'
+  });
+  if(res){showToast('✓ Партия сохранена — '+fmtT(res.ves_kg));loadProizvodstvo();}
+}
+
+// ══ ПРОДАЖИ ══
+async function loadProdazhi(){
+  await loadSpravy();
+  const rows=await api('/prodazhi/?den='+today());
+  const tb=document.getElementById('prodazhi-tbody');
+  if(tb) tb.innerHTML=rows&&rows.length?rows.map(r=>`
+    <tr>
+      <td class="mono">${timeStr(r.data_vremya)}</td>
+      <td>${r.pokupatel?.name||r.pokupatel_id}</td>
+      <td style="color:var(--text3)">${r.avto?.gos_nomer||'—'}</td>
+      <td><span class="tag tag-green">${r.marka?.name||r.marka_id}</span></td>
+      <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.netto_kg)}</td>
+      <td style="text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--green)">${r.summa?fmt(r.summa):'—'}</td>
+    </tr>`).join(''):'<tr><td colspan="6" class="loading">Нет отгрузок сегодня</td></tr>';
+}
+async function saveProdazha(){
+  const brutto=getW('pd-brutto'),tara=getW('pd-tara');
+  if(!brutto||!tara){showToast('Зафиксируйте брутто и тару!',false);return;}
+  const res=await apiPost('/prodazhi/',{
+    pokupatel_id:+document.getElementById('pd-pokup').value,
+    avto_id:+document.getElementById('pd-avto-id').value||null,
+    marka_id:+document.getElementById('pd-marka').value,
+    brutto_kg:brutto, tara_kg:tara,
+    tsena_za_tonnu:parseFloat(document.getElementById('pd-tsena').value)||null,
+    operator:'Оператор'
+  });
+  if(res){showToast('✓ Отгрузка сохранена — '+fmtT(res.netto_kg)+' | Накладная: '+res.nakladnaya_no);loadProdazhi();}
+}
+
+// ══ ОТЧЁТЫ ══
+// ══ ОТЧЁТЫ ══
+function otSetPeriod(p) {
+  const to = new Date();
+  const from = new Date();
+  if(p==='week') from.setDate(from.getDate()-7);
+  else if(p==='month') from.setDate(1);
+  document.getElementById('ot-date-from').value = from.toISOString().split('T')[0];
+  document.getElementById('ot-date-to').value = to.toISOString().split('T')[0];
+  loadOtchety();
+}
+
+async function loadOtchety(){
+  const rows=await api('/prodazhi/po-pokupatelam');
+  const tb=document.getElementById('otchety-tbody');
+  if(tb&&rows){
+    tb.innerHTML=rows.length?rows.map((r,i)=>`
+      <tr>
+        <td style="color:var(--text3)">${i+1}</td>
+        <td>${r.pokupatel}</td>
+        <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${r.netto_t}</td>
+        <td style="text-align:right;font-family:'IBM Plex Mono',monospace">${r.reysy}</td>
+        <td style="text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--green)">${r.summa?fmtMln(r.summa):'—'}</td>
+      </tr>`).join(''):'<tr><td colspan="5" class="loading">Нет данных</td></tr>';
+    const tt=rows.reduce((s,r)=>s+r.netto_t,0);
+    const ts=rows.reduce((s,r)=>s+(r.summa||0),0);
+    document.getElementById('otchety-total').textContent=tt.toFixed(1)+' т / '+fmtMln(ts);
+  }
+
+  // Статы
+  const d=await api('/dashboard/segodnya');
+  if(d){
+    document.getElementById('ot-prikhod').textContent=fmtT(d.prikhod.itogo_kg);
+    document.getElementById('ot-prod').textContent=fmtT(d.proizvodstvo.itogo_kg);
+    document.getElementById('ot-prodano').textContent=fmtT(d.prodazhi.itogo_kg);
+    document.getElementById('ot-vyr').textContent=fmtMln(d.prodazhi.vyruchka);
+  }
+
+  // Таблица приходов
+  const den = document.getElementById('ot-date-from')?.value || today();
+  const pr = await api('/prikhod/?den='+den);
+  const tb2 = document.getElementById('ot-prikhod-tbody');
+  if(tb2) tb2.innerHTML = pr&&pr.length ? pr.map(r=>`
+    <tr>
+      <td class="mono">${new Date(r.data_vremya).toLocaleDateString('ru-RU')}</td>
+      <td>${r.vid_syrya?.name||r.vid_syrya_id}</td>
+      <td style="color:var(--text3)">${r.postavshik?.name||r.postavshik_id}</td>
+      <td style="color:var(--text3)">${r.avto?.gos_nomer||'—'}</td>
+      <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.netto_kg)}</td>
+    </tr>`).join('') : '<tr><td colspan="5" class="loading">Нет приходов за период</td></tr>';
+
+  showToast('✓ Отчёт обновлён');
+}
+
+function exportExcel() {
+  // Собираем данные из таблиц
+  const rows1 = [];
+  document.querySelectorAll('#otchety-tbody tr').forEach(tr => {
+    const cells = tr.querySelectorAll('td');
+    if(cells.length >= 5) rows1.push([cells[0].textContent, cells[1].textContent, cells[2].textContent, cells[3].textContent, cells[4].textContent]);
+  });
+  const rows2 = [];
+  document.querySelectorAll('#ot-prikhod-tbody tr').forEach(tr => {
+    const cells = tr.querySelectorAll('td');
+    if(cells.length >= 5) rows2.push([cells[0].textContent, cells[1].textContent, cells[2].textContent, cells[3].textContent, cells[4].textContent]);
+  });
+
+  const prikhod = document.getElementById('ot-prikhod').textContent;
+  const prod    = document.getElementById('ot-prod').textContent;
+  const prodano = document.getElementById('ot-prodano').textContent;
+  const vyr     = document.getElementById('ot-vyr').textContent;
+  const now     = new Date().toLocaleString('ru-RU');
+
+  // Генерируем CSV (открывается в Excel)
+  let csv = '\uFEFF'; // BOM для кириллицы
+  csv += 'ОТЧЁТ АСФАЛЬТОВОГО ЗАВОДА\n';
+  csv += 'Дата отчёта:;' + now + '\n\n';
+  csv += 'ИТОГИ ЗА ПЕРИОД\n';
+  csv += 'Приход сырья;' + prikhod + '\n';
+  csv += 'Произведено;' + prod + '\n';
+  csv += 'Продано;' + prodano + '\n';
+  csv += 'Выручка;' + vyr + '\n\n';
+  csv += 'ПРОДАЖИ ПО ПОКУПАТЕЛЯМ\n';
+  csv += '#;Покупатель;Тонн;Рейсов;Сумма млн сум\n';
+  rows1.forEach(r => csv += r.join(';') + '\n');
+  csv += '\nПРИХОДЫ СЫРЬЯ\n';
+  csv += 'Дата;Вид сырья;Поставщик;Авто;Нетто кг\n';
+  rows2.forEach(r => csv += r.join(';') + '\n');
+
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'otchet_' + today() + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✓ Файл скачан — откройте в Excel');
+}
+
+// ══ СПРАВОЧНИКИ ══
+
+let _spravLoaded = { postavshiki:false, vidy:false, pokupateli:false, marki:false, avto:false };
+
+function spravTab(tab) {
+  ['postavshiki','vidy','pokupateli','marki','avto'].forEach(t => {
+    document.getElementById('sprav-'+t).style.display = t===tab ? '' : 'none';
+    const btn = document.getElementById('st-'+t);
+    if(btn){ btn.className = t===tab ? 'btn btn-primary' : 'btn btn-ghost'; }
+  });
+  loadSpravTab(tab);
+}
+
+async function loadSpravTab(tab) {
+  if(tab==='postavshiki') await loadSPPostavshiki();
+  else if(tab==='vidy') await loadSPVidy();
+  else if(tab==='pokupateli') await loadSPPokupateli();
+  else if(tab==='marki') await loadSPMarki();
+  else if(tab==='avto') await loadSPAvto();
+}
+
+// — ПОСТАВЩИКИ —
+async function loadSPPostavshiki() {
+  const rows = await api('/sklad/postavshiki');
+  const tb = document.getElementById('sp-tbody');
+  if(!tb || !rows) return;
+  tb.innerHTML = rows.length ? rows.map((r,i) => `
+    <tr>
+      <td style="color:var(--text3)">${i+1}</td>
+      <td><strong>${r.name}</strong></td>
+      <td class="mono">${r.telefon||'—'}</td>
+      <td class="mono">${r.inn||'—'}</td>
+      <td style="color:var(--text3)">${r.sozdano ? new Date(r.sozdano).toLocaleDateString('ru-RU') : '—'}</td>
+      <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--red)" onclick="deletePostavshik(${r.id})">✕</button></td>
+    </tr>`).join('') : '<tr><td colspan="6" class="loading">Нет поставщиков</td></tr>';
+}
+async function savePostavshik() {
+  const name = document.getElementById('sp-name').value.trim();
+  if(!name){ showToast('Введите название!', false); return; }
+  const res = await apiPost('/sklad/postavshiki', {
+    name, telefon: document.getElementById('sp-tel').value||null,
+    inn: document.getElementById('sp-inn').value||null
+  });
+  if(res){ showToast('✓ Поставщик добавлен'); document.getElementById('sp-name').value=''; document.getElementById('sp-tel').value=''; document.getElementById('sp-inn').value=''; await loadSPPostavshiki(); _spravy=false; }
+}
+async function deletePostavshik(id) {
+  if(!confirm('Удалить поставщика?')) return;
+  const r = await fetch(API+'/sklad/postavshiki/'+id, {method:'DELETE'});
+  if(r.ok){ showToast('Поставщик удалён'); await loadSPPostavshiki(); _spravy=false; }
+  else showToast('Ошибка удаления', false);
+}
+
+// — ВИДЫ СЫРЬЯ —
+async function loadSPVidy() {
+  const rows = await api('/sklad/vidy-syrya');
+  const tb = document.getElementById('sv-tbody');
+  if(!tb || !rows) return;
+  tb.innerHTML = rows.length ? rows.map((r,i) => `
+    <tr>
+      <td style="color:var(--text3)">${i+1}</td>
+      <td><strong>${r.name}</strong></td>
+      <td class="mono">${r.edinitsa}</td>
+      <td class="mono">${r.min_ostatok ? r.min_ostatok.toLocaleString('ru-RU')+' кг' : '—'}</td>
+      <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--red)" onclick="deleteVidSyrya(${r.id})">✕</button></td>
+    </tr>`).join('') : '<tr><td colspan="5" class="loading">Нет видов сырья</td></tr>';
+}
+async function saveVidSyrya() {
+  const name = document.getElementById('sv-name').value.trim();
+  if(!name){ showToast('Введите название!', false); return; }
+  const res = await apiPost('/sklad/vidy-syrya', {
+    name, edinitsa: document.getElementById('sv-ed').value,
+    min_ostatok: parseFloat(document.getElementById('sv-min').value)||0
+  });
+  if(res){ showToast('✓ Вид сырья добавлен'); document.getElementById('sv-name').value=''; document.getElementById('sv-min').value=''; await loadSPVidy(); _spravy=false; }
+}
+async function deleteVidSyrya(id) {
+  if(!confirm('Удалить вид сырья?')) return;
+  const r = await fetch(API+'/sklad/vidy-syrya/'+id, {method:'DELETE'});
+  if(r.ok){ showToast('Вид сырья удалён'); await loadSPVidy(); _spravy=false; }
+  else showToast('Ошибка удаления', false);
+}
+
+// — ПОКУПАТЕЛИ —
+async function loadSPPokupateli() {
+  const rows = await api('/sklad/pokupateli');
+  const tb = document.getElementById('sk-tbody');
+  if(!tb || !rows) return;
+  tb.innerHTML = rows.length ? rows.map((r,i) => `
+    <tr>
+      <td style="color:var(--text3)">${i+1}</td>
+      <td><strong>${r.name}</strong></td>
+      <td class="mono">${r.telefon||'—'}</td>
+      <td class="mono">${r.inn||'—'}</td>
+      <td style="color:var(--text3)">${r.adres||'—'}</td>
+      <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--red)" onclick="deletePokupatel(${r.id})">✕</button></td>
+    </tr>`).join('') : '<tr><td colspan="6" class="loading">Нет покупателей</td></tr>';
+}
+async function savePokupatel() {
+  const name = document.getElementById('sk-name').value.trim();
+  if(!name){ showToast('Введите название!', false); return; }
+  const res = await apiPost('/sklad/pokupateli', {
+    name, telefon: document.getElementById('sk-tel').value||null,
+    inn: document.getElementById('sk-inn').value||null,
+    adres: document.getElementById('sk-adres').value||null
+  });
+  if(res){ showToast('✓ Покупатель добавлен'); ['sk-name','sk-tel','sk-inn','sk-adres'].forEach(id=>document.getElementById(id).value=''); await loadSPPokupateli(); _spravy=false; }
+}
+async function deletePokupatel(id) {
+  if(!confirm('Удалить покупателя?')) return;
+  const r = await fetch(API+'/sklad/pokupateli/'+id, {method:'DELETE'});
+  if(r.ok){ showToast('Покупатель удалён'); await loadSPPokupateli(); _spravy=false; }
+  else showToast('Ошибка удаления', false);
+}
+
+// — МАРКИ АСФАЛЬТА —
+async function loadSPMarki() {
+  const rows = await api('/sklad/marki-asfalta');
+  const tb = document.getElementById('sm-tbody');
+  if(!tb || !rows) return;
+  tb.innerHTML = rows.length ? rows.map((r,i) => `
+    <tr>
+      <td style="color:var(--text3)">${i+1}</td>
+      <td><strong>${r.name}</strong></td>
+      <td class="mono">${r.kod||'—'}</td>
+      <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--red)" onclick="deleteMarka(${r.id})">✕</button></td>
+    </tr>`).join('') : '<tr><td colspan="4" class="loading">Нет марок</td></tr>';
+}
+async function saveMarka() {
+  const name = document.getElementById('sm-name').value.trim();
+  if(!name){ showToast('Введите название!', false); return; }
+  const res = await apiPost('/sklad/marki-asfalta', {
+    name, kod: document.getElementById('sm-kod').value||null
+  });
+  if(res){ showToast('✓ Марка добавлена'); document.getElementById('sm-name').value=''; document.getElementById('sm-kod').value=''; await loadSPMarki(); _spravy=false; }
+}
+async function deleteMarka(id) {
+  if(!confirm('Удалить марку?')) return;
+  const r = await fetch(API+'/sklad/marki-asfalta/'+id, {method:'DELETE'});
+  if(r.ok){ showToast('Марка удалена'); await loadSPMarki(); _spravy=false; }
+  else showToast('Ошибка удаления', false);
+}
+
+// — АВТОМОБИЛИ —
+async function loadSPAvto() {
+  // Заполняем дропдауны при первом открытии
+  const [post, pokup] = await Promise.all([api('/sklad/postavshiki'), api('/sklad/pokupateli')]);
+  const sap = document.getElementById('sa-post'), sapk = document.getElementById('sa-pokup');
+  if(post && sap.options.length <= 1){ post.forEach(p=>sap.add(new Option(p.name,p.id))); }
+  if(pokup && sapk.options.length <= 1){ pokup.forEach(p=>sapk.add(new Option(p.name,p.id))); }
+
+  const rows = await api('/sklad/avto');
+  const tb = document.getElementById('sa-tbody');
+  if(!tb || !rows) return;
+  tb.innerHTML = rows.length ? rows.map((r,i) => `
+    <tr>
+      <td style="color:var(--text3)">${i+1}</td>
+      <td><strong class="mono">${r.gos_nomer}</strong></td>
+      <td>${r.marka||'—'}</td>
+      <td class="mono">${r.gruzopod_kg ? r.gruzopod_kg.toLocaleString('ru-RU')+' кг' : '—'}</td>
+      <td style="color:var(--text3)">${r.postavshik||'—'}</td>
+      <td style="color:var(--text3)">${r.pokupatel||'—'}</td>
+      <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--red)" onclick="deleteAvto(${r.id})">✕</button></td>
+    </tr>`).join('') : '<tr><td colspan="7" class="loading">Нет автомобилей</td></tr>';
+}
+async function saveAvto() {
+  const gos = document.getElementById('sa-gos').value.trim();
+  if(!gos){ showToast('Введите гос. номер!', false); return; }
+  const res = await apiPost('/sklad/avto', {
+    gos_nomer: gos,
+    marka: document.getElementById('sa-marka').value||null,
+    gruzopod_kg: parseFloat(document.getElementById('sa-gruz').value)||null,
+    postavshik_id: parseInt(document.getElementById('sa-post').value)||null,
+    pokupatel_id: parseInt(document.getElementById('sa-pokup').value)||null
+  });
+  if(res){ showToast('✓ Авто добавлено'); ['sa-gos','sa-marka','sa-gruz'].forEach(id=>document.getElementById(id).value=''); await loadSPAvto(); }
+}
+async function deleteAvto(id) {
+  if(!confirm('Удалить автомобиль?')) return;
+  const r = await fetch(API+'/sklad/avto/'+id, {method:'DELETE'});
+  if(r.ok){ showToast('Авто удалено'); await loadSPAvto(); }
+  else showToast('Ошибка удаления', false);
+}
+
+// ══ РУЧНОЙ ВВОД ВЕСА ══
+function manualWeight(elId) {
+  const labels = {
+    'p-brutto': 'Брутто (приход)', 'p-tara': 'Тара (приход)',
+    'pd-brutto': 'Брутто (отгрузка)', 'pd-tara': 'Тара (отгрузка)',
+    'r-fakt': 'Вес расхода', 'pr-ves': 'Вес партии'
+  };
+  const cur = getW(elId);
+  const val = prompt((labels[elId]||elId) + ' — введите вес в кг:', cur > 0 ? cur : '');
+  if(val === null) return;
+  const num = parseFloat(val.replace(',','.'));
+  if(isNaN(num) || num <= 0) { showToast('Введите корректный вес!', false); return; }
+  document.getElementById(elId).textContent = Math.round(num).toLocaleString('ru-RU');
+  fixedWeights[elId] = num;
+  if(elId==='p-brutto'||elId==='p-tara') calcNettoP();
+  if(elId==='pd-brutto'||elId==='pd-tara'){ calcNettoPD(); calcSumma(); }
+  showToast('✓ Вес введён вручную: ' + Math.round(num).toLocaleString('ru-RU') + ' кг');
+}
+
+// ══ ПЕЧАТЬ ТАЛОНА (ПРИХОД) ══
+function printTalon() {
+  const brutto = getW('p-brutto'), tara = getW('p-tara'), netto = brutto - tara;
+  const vid = document.getElementById('p-vid');
+  const post = document.getElementById('p-post');
+  const gos = document.getElementById('p-gos').value || '—';
+  const nakl = document.getElementById('p-nakladnaya').value || '—';
+  const vidName = vid.options[vid.selectedIndex]?.text || '—';
+  const postName = post.options[post.selectedIndex]?.text || '—';
+  const now = new Date().toLocaleString('ru-RU');
+
+  const w = window.open('', '_blank', 'width=600,height=700');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Талон прихода</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 30px; color: #000; font-size: 14px; }
+    h2 { text-align: center; margin-bottom: 4px; font-size: 18px; }
+    .sub { text-align: center; color: #555; margin-bottom: 24px; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    td { padding: 8px 12px; border: 1px solid #ccc; }
+    td:first-child { background: #f5f5f5; font-weight: bold; width: 45%; }
+    .big { text-align: center; font-size: 28px; font-weight: bold; padding: 16px; border: 2px solid #000; margin: 20px 0; }
+    .footer { text-align: center; font-size: 12px; color: #888; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 12px; }
+    @media print { button { display: none; } }
+  </style></head><body>
+  <h2>ВЕСОВОЙ ТАЛОН — ПРИХОД СЫРЬЯ</h2>
+  <div class="sub">Асфальтовый завод · ${now}</div>
+  <table>
+    <tr><td>Вид сырья</td><td>${vidName}</td></tr>
+    <tr><td>Поставщик</td><td>${postName}</td></tr>
+    <tr><td>Гос. номер авто</td><td>${gos}</td></tr>
+    <tr><td>Номер накладной</td><td>${nakl}</td></tr>
+    <tr><td>Брутто</td><td><b>${Math.round(brutto).toLocaleString('ru-RU')} кг</b></td></tr>
+    <tr><td>Тара</td><td><b>${Math.round(tara).toLocaleString('ru-RU')} кг</b></td></tr>
+  </table>
+  <div class="big">НЕТТО: ${Math.round(netto).toLocaleString('ru-RU')} кг = ${(netto/1000).toFixed(2)} т</div>
+  <table>
+    <tr><td>Оператор</td><td>_______________________</td></tr>
+    <tr><td>Водитель</td><td>_______________________</td></tr>
+  </table>
+  <div class="footer">Распечатано: ${now}</div>
+  <div style="text-align:center;margin-top:16px">
+    <button onclick="window.print()" style="padding:10px 30px;font-size:14px;cursor:pointer">🖨 Печать</button>
+  </div>
+  </body></html>`);
+  w.document.close();
+}
+
+// ══ ПЕЧАТЬ НАКЛАДНОЙ (ПРОДАЖА) ══
+function printNakladnaya() {
+  const brutto = getW('pd-brutto'), tara = getW('pd-tara'), netto = brutto - tara;
+  const pokup = document.getElementById('pd-pokup');
+  const marka = document.getElementById('pd-marka');
+  const gos = document.getElementById('pd-gos').value || '—';
+  const tsena = parseFloat(document.getElementById('pd-tsena').value) || 0;
+  const summa = (netto / 1000) * tsena;
+  const pokupName = pokup.options[pokup.selectedIndex]?.text || '—';
+  const markaName = marka.options[marka.selectedIndex]?.text || '—';
+  const now = new Date().toLocaleString('ru-RU');
+  const naklNo = 'НК-' + Date.now().toString().slice(-6);
+
+  const w = window.open('', '_blank', 'width=700,height=800');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Накладная ${naklNo}</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 30px; color: #000; font-size: 14px; }
+    h2 { text-align: center; margin-bottom: 4px; font-size: 18px; }
+    .sub { text-align: center; color: #555; margin-bottom: 24px; font-size: 13px; }
+    .nakl-no { text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    td { padding: 8px 12px; border: 1px solid #ccc; }
+    td:first-child { background: #f5f5f5; font-weight: bold; width: 45%; }
+    .summa-row td { font-size: 16px; background: #fffbe6 !important; }
+    .footer { font-size: 12px; color: #888; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 12px; }
+    .sign-row { display: flex; justify-content: space-between; margin-top: 30px; font-size: 13px; }
+    .sign-box { text-align: center; width: 45%; }
+    .sign-line { border-top: 1px solid #000; margin-top: 40px; padding-top: 4px; }
+    @media print { button { display: none; } }
+  </style></head><body>
+  <h2>ТОВАРНО-ТРАНСПОРТНАЯ НАКЛАДНАЯ</h2>
+  <div class="sub">Асфальтовый завод</div>
+  <div class="nakl-no">№ ${naklNo}</div>
+  <table>
+    <tr><td>Дата и время</td><td>${now}</td></tr>
+    <tr><td>Покупатель</td><td><b>${pokupName}</b></td></tr>
+    <tr><td>Гос. номер авто</td><td>${gos}</td></tr>
+    <tr><td>Товар</td><td>Асфальтобетонная смесь — ${markaName}</td></tr>
+  </table>
+  <table>
+    <tr><td>Брутто</td><td>${Math.round(brutto).toLocaleString('ru-RU')} кг</td></tr>
+    <tr><td>Тара</td><td>${Math.round(tara).toLocaleString('ru-RU')} кг</td></tr>
+    <tr><td><b>Нетто</b></td><td><b>${Math.round(netto).toLocaleString('ru-RU')} кг = ${(netto/1000).toFixed(3)} т</b></td></tr>
+    <tr><td>Цена за тонну</td><td>${tsena ? tsena.toLocaleString('ru-RU') + ' сум' : '—'}</td></tr>
+    <tr class="summa-row"><td><b>ИТОГО К ОПЛАТЕ</b></td><td><b>${tsena ? Math.round(summa).toLocaleString('ru-RU') + ' сум' : '—'}</b></td></tr>
+  </table>
+  <div class="sign-row">
+    <div class="sign-box"><div class="sign-line">Отпустил (подпись)</div></div>
+    <div class="sign-box"><div class="sign-line">Получил (подпись)</div></div>
+  </div>
+  <div class="footer" style="margin-top:30px;text-align:center">Накладная распечатана: ${now}</div>
+  <div style="text-align:center;margin-top:16px">
+    <button onclick="window.print()" style="padding:10px 30px;font-size:14px;cursor:pointer">🖨 Печать</button>
+  </div>
+  </body></html>`);
+  w.document.close();
+}
+
+// ── Запуск ──
+loadDashboard();
+pollVesy();
+</script>
+</body>
+</html>
