@@ -130,8 +130,7 @@ tr:hover td{background:var(--bg3)}
   <div class="nav-section">
     <div class="nav-label">Оператор</div>
     <button class="nav-item" onclick="showPage('prikhod')"><span>↓</span> Приход сырья</button>
-    <button class="nav-item" onclick="showPage('raskhod')"><span>↑</span> Расход сырья</button>
-    <button class="nav-item" onclick="showPage('proizvodstvo')"><span>⬡</span> Производство</button>
+    <button class="nav-item" onclick="showPage('proizvodstvo')"><span>⬡</span> Производство / Замес</button>
     <button class="nav-item" onclick="showPage('prodazhi')"><span>🚛</span> Продажи</button>
   </div>
   <div class="nav-section">
@@ -275,94 +274,59 @@ tr:hover td{background:var(--bg3)}
   </div>
 
   <!-- ══ РАСХОД СЫРЬЯ ══ -->
-  <div class="content" id="page-raskhod">
-    <div class="section-title">Расход сырья</div>
-    <div class="section-sub">Оператор весов — подача в производство</div>
+  <!-- ══ ПРОИЗВОДСТВО + ЗАМЕС ══ -->
+  <div class="content" id="page-proizvodstvo">
+    <div class="section-title">Производство / Замес</div>
+    <div class="section-sub">Оператор — расход сырья и получение асфальта за один замес</div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="s-label">Произведено сегодня</div><div class="s-val s-green" id="pr-total-kg">—</div><div class="s-sub">тонн</div></div>
+      <div class="stat-card"><div class="s-label">Замесов за день</div><div class="s-val s-blue" id="pr-total-partiy">—</div><div class="s-sub">партий</div></div>
+    </div>
 
     <div class="card">
       <div class="card-label" style="margin-bottom:12px">Остатки сырья на складе</div>
-      <div id="raskhod-ostatki"><div class="loading">Загрузка...</div></div>
-      <div class="warn-box" id="raskhod-warn" style="display:none">⚠ <span></span></div>
+      <div id="zames-ostatki"><div class="loading">Загрузка...</div></div>
+      <div class="warn-box" id="zames-warn" style="display:none">⚠ <span></span></div>
     </div>
 
     <div class="card">
-      <div class="card-label" style="margin-bottom:12px">Новый расход — подача в производство</div>
-      <div class="form-grid">
-        <div class="field"><label>Вид сырья</label><select id="r-vid"><option value="">Загрузка...</option></select></div>
-        <div class="field"><label>Марка асфальта</label><select id="r-marka"><option value="">Загрузка...</option></select></div>
-      </div>
-      <div style="margin-top:4px">
-        <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Фактический вес подачи</div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <div class="wbox" style="display:inline-flex;align-items:center;gap:14px;min-width:200px">
-            <div><span class="wbox-val" id="r-fakt">0</span><span class="wbox-unit">кг</span></div>
-          </div>
-          <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="fixWeight('r-fakt')">📍 С весов</button>
-          <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="manualWeight('r-fakt')">✏️ Вручную</button>
-        </div>
-      </div>
-      <div class="cmp-row">
-        <span style="color:var(--text3)">Норма по рецептуре</span>
-        <span id="r-norma" style="font-family:'IBM Plex Mono',monospace;font-weight:500">—</span>
-        <span id="r-otkl" class="dev-ok">введите вес</span>
-      </div>
-      <div class="btn-row">
-        <span></span>
-        <button class="btn btn-primary" onclick="saveRaskhod()">✓ Сохранить расход</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-label" style="margin-bottom:12px">Расходы сегодня</div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Время</th><th>Сырьё</th><th>Марка</th><th style="text-align:right">Факт, кг</th><th style="text-align:right">Откл.</th></tr></thead>
-        <tbody id="raskhod-tbody"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
-      </table></div>
-    </div>
-  </div>
-
-  <!-- ══ ПРОИЗВОДСТВО ══ -->
-  <div class="content" id="page-proizvodstvo">
-    <div class="section-title">Производство асфальта</div>
-    <div class="section-sub">Оператор весов — фиксация партии</div>
-
-    <div class="stat-grid">
-      <div class="stat-card"><div class="s-label">Произведено сегодня</div><div class="s-val" id="pr-total-kg">—</div><div class="s-sub">тонн</div></div>
-      <div class="stat-card"><div class="s-label">Партий за день</div><div class="s-val s-blue" id="pr-total-partiy">—</div><div class="s-sub">замесов</div></div>
-    </div>
-
-    <div class="card">
-      <div class="card-label" style="margin-bottom:12px">Новая партия — данные с весов</div>
-      <div class="form-grid">
+      <div class="card-label" style="margin-bottom:14px">Новый замес</div>
+      <div class="form-grid" style="margin-bottom:16px">
         <div class="field"><label>Марка асфальта</label><select id="pr-marka"><option value="">Загрузка...</option></select></div>
         <div class="field"><label>Смена</label><select id="pr-smena"><option value="1">Смена 1 (06:00–18:00)</option><option value="2">Смена 2 (18:00–06:00)</option></select></div>
-      </div>
-      <div style="margin-top:4px">
-        <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Вес партии</div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <div class="wbox" style="display:inline-flex;align-items:center;gap:14px;min-width:200px">
-            <div><span class="wbox-val" id="pr-ves">0</span><span class="wbox-unit">кг</span></div>
-          </div>
-          <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="fixWeight('pr-ves')">📍 С весов</button>
-          <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="manualWeight('pr-ves')">✏️ Вручную</button>
-        </div>
-      </div>
-      <div class="form-grid" style="margin-top:14px">
-        <div class="field"><label>Время начала</label><input id="pr-nach" type="text" placeholder="10:24"/></div>
-        <div class="field"><label>Время окончания</label><input id="pr-kon" type="text" placeholder="10:31"/></div>
         <div class="field"><label>Температура, °C</label><input id="pr-temp" type="number" placeholder="165"/></div>
       </div>
+
+      <div class="card-label" style="margin-bottom:10px">Расход сырья на замес</div>
+      <div id="zames-komponenty"><div class="loading">Загрузка...</div></div>
+      <button class="btn btn-ghost" style="width:100%;margin-top:8px;margin-bottom:16px" onclick="addKomponent()">+ Добавить сырьё</button>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-radius:8px;padding:10px 14px;margin-bottom:16px">
+        <span style="font-size:13px;color:var(--text3)">Итого сырья в замесе</span>
+        <span class="mono" id="zames-itogo-syrya" style="font-size:16px;font-weight:500">0 кг</span>
+      </div>
+
+      <div class="card-label" style="margin-bottom:10px">Получено асфальта (с весов)</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        <div class="wbox" style="display:inline-flex;align-items:center;gap:14px;min-width:200px">
+          <div><span class="wbox-val" id="pr-ves">0</span><span class="wbox-unit">кг</span></div>
+        </div>
+        <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="fixWeight('pr-ves')">📍 С весов</button>
+        <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="manualWeight('pr-ves')">✏️ Вручную</button>
+      </div>
+
       <div class="btn-row">
         <span></span>
-        <button class="btn btn-primary" onclick="saveProizvodstvo()">✓ Сохранить партию</button>
+        <button class="btn btn-primary" onclick="saveZames()">✓ Сохранить замес</button>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-label" style="margin-bottom:12px">Партии сегодня</div>
+      <div class="card-label" style="margin-bottom:12px">Замесы сегодня</div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Время</th><th>Марка</th><th>Смена</th><th style="text-align:center">Темп. °C</th><th style="text-align:right">Вес, кг</th></tr></thead>
-        <tbody id="prod-tbody"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
+        <thead><tr><th>Время</th><th>Марка</th><th>Смена</th><th style="text-align:center">Темп.</th><th style="text-align:right">Асфальт, кг</th><th></th></tr></thead>
+        <tbody id="prod-tbody"><tr><td colspan="6" class="loading">Загрузка...</td></tr></tbody>
       </table></div>
     </div>
   </div>
@@ -640,7 +604,6 @@ function showPage(id){
   closeSidebar();
   if(id==='dashboard')    loadDashboard();
   if(id==='prikhod')      loadPrikhod();
-  if(id==='raskhod')      loadRaskhod();
   if(id==='proizvodstvo') loadProizvodstvo();
   if(id==='prodazhi')     loadProdazhi();
   if(id==='otchety'){ 
@@ -669,12 +632,10 @@ function fmt(v){return Math.round(v).toLocaleString('ru-RU')}
 function fmtT(v){return (v/1000).toFixed(1)+' т'}
 function fmtMln(v){return (v/1000000).toFixed(1)+' млн'}
 function timeStr(dt){
-  // Сервер Railway хранит UTC, Ташкент = UTC+5
-  const d = new Date(dt.endsWith('Z') ? dt : dt + 'Z');
-  return d.toLocaleTimeString('ru-RU', {
-    hour: '2-digit', minute: '2-digit',
-    timeZone: 'Asia/Tashkent'
-  });
+  const d = new Date(dt);
+  // Сдвигаем на +5 часов (Ташкент)
+  const tash = new Date(d.getTime() + 5*60*60*1000);
+  return tash.toISOString().substr(11,5);
 }
 function today(){
   const d=new Date();
@@ -958,85 +919,132 @@ async function savePrikhod(){
 }
 
 // ══ РАСХОД ══
-async function loadRaskhod(){
-  await loadSpravy();
-  const ostatki=await api('/sklad/ostatki');
-  const el=document.getElementById('raskhod-ostatki');
-  if(el&&ostatki){
-    el.innerHTML=ostatki.map(o=>{
-      const pct=Math.min(100,(o.kolichestvo_kg/(o.min_ostatok*10||50000))*100);
-      const c=o.preduprejdenie?'var(--amber)':'var(--green)';
-      return`<div class="stock-item">
-        <span class="stock-name">${o.name}</span>
-        <div class="stock-bar-wrap"><div class="stock-bar" style="width:${pct}%;background:${c}"></div></div>
-        <span class="stock-qty" style="color:${c}">${fmt(o.kolichestvo_kg)} кг${o.preduprejdenie?' ⚠':''}</span>
-      </div>`;
-    }).join('');
-    const warns=ostatki.filter(o=>o.preduprejdenie);
-    const w=document.getElementById('raskhod-warn');
-    if(w){
-      if(warns.length){w.style.display='flex';w.querySelector('span').textContent=warns.map(o=>o.name+': '+fmt(o.kolichestvo_kg)+' кг').join(' | ');}
-      else w.style.display='none';
-    }
-  }
-  const rows=await api('/raskhod/?den='+today());
-  const tb=document.getElementById('raskhod-tbody');
-  if(tb) tb.innerHTML=rows&&rows.length?rows.map(r=>{
-    const dev=r.otklonenie_pct;
-    return`<tr>
-      <td class="mono">${timeStr(r.data_vremya)}</td>
-      <td>${r.vid_syrya?.name||r.vid_syrya_id}</td>
-      <td><span class="tag tag-green">${r.marka?.name||r.marka_id}</span></td>
-      <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.fakt_kg)}</td>
-      <td style="text-align:right" class="${dev!=null&&Math.abs(dev)>2?'dev-warn':'dev-ok'}">${dev!=null?(dev>=0?'+':'')+dev+'%':'—'}</td>
-      <td><button class="btn btn-ghost" style="padding:3px 8px;font-size:12px;color:var(--red)" onclick="deleteRecord('raskhod',${r.id})">✕</button></td>
-    </tr>`;
-  }).join(''):'<tr><td colspan="6" class="loading">Нет расходов сегодня</td></tr>';
+// ══ ПРОИЗВОДСТВО + ЗАМЕС ══
+let _komponenty = [];
+let _vidy_zames = [];
+
+function addKomponent() {
+  const id = Date.now();
+  _komponenty.push({id, vid_id:'', fakt_kg:0});
+  renderKomponenty();
 }
-async function saveRaskhod(){
-  const fakt=getW('r-fakt');
-  if(!fakt){showToast('Зафиксируйте вес с весов!',false);return;}
-  const res=await apiPost('/raskhod/',{
-    vid_syrya_id:+document.getElementById('r-vid').value,
-    marka_id:+document.getElementById('r-marka').value,
-    fakt_kg:fakt, operator:'Оператор'
-  });
-  if(res){showToast('✓ Расход сохранён — '+fmt(res.fakt_kg)+' кг');loadRaskhod();}
+function removeKomponent(id) {
+  _komponenty = _komponenty.filter(k => k.id !== id);
+  renderKomponenty();
+  calcItogoSyrya();
+}
+function renderKomponenty() {
+  const el = document.getElementById('zames-komponenty');
+  if (!el) return;
+  if (_komponenty.length === 0) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px 0">Нажмите кнопку ниже чтобы добавить компонент</div>';
+    return;
+  }
+  el.innerHTML = _komponenty.map(k => `
+    <div style="display:grid;grid-template-columns:1fr 160px 36px;gap:8px;margin-bottom:10px;align-items:end">
+      <div class="field">
+        <label>Вид сырья</label>
+        <select onchange="updateKomp(${k.id},'vid_id',this.value)">
+          <option value="">— выберите —</option>
+          ${(_vidy_zames||[]).map(v=>'<option value="'+v.id+'"'+(k.vid_id==v.id?' selected':'')+'>'+v.name+'</option>').join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>Вес, кг</label>
+        <input type="number" placeholder="0" value="${k.fakt_kg||''}"
+          oninput="updateKomp(${k.id},'fakt_kg',parseFloat(this.value)||0);calcItogoSyrya()"/>
+      </div>
+      <button class="btn btn-ghost" style="padding:8px;color:var(--red)" onclick="removeKomponent(${k.id})">✕</button>
+    </div>
+  `).join('');
+}
+function updateKomp(id, field, value) {
+  const k = _komponenty.find(x => x.id === id);
+  if (k) k[field] = value;
+}
+function calcItogoSyrya() {
+  const total = _komponenty.reduce((s,k) => s + (parseFloat(k.fakt_kg)||0), 0);
+  const el = document.getElementById('zames-itogo-syrya');
+  if (el) el.textContent = fmt(total) + ' кг';
 }
 
-// ══ ПРОИЗВОДСТВО ══
-async function loadProizvodstvo(){
+async function loadProizvodstvo() {
   await loadSpravy();
-  const rows=await api('/proizvodstvo/?den='+today());
-  const tb=document.getElementById('prod-tbody');
-  if(tb) tb.innerHTML=rows&&rows.length?rows.map(r=>`
-    <tr>
-      <td class="mono">${timeStr(r.data_vremya)}</td>
-      <td><span class="tag tag-green">${r.marka?.name||r.marka_id}</span></td>
-      <td style="color:var(--text3)">${r.smena}</td>
-      <td style="text-align:center;font-family:'IBM Plex Mono',monospace">${r.temperatura||'—'}</td>
-      <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.ves_kg)}</td>
-      <td><button class="btn btn-ghost" style="padding:3px 8px;font-size:12px;color:var(--red)" onclick="deleteRecord('proizvodstvo',${r.id})">✕</button></td>
-    </tr>`).join(''):'<tr><td colspan="6" class="loading">Нет партий сегодня</td></tr>';
-  const itog=await api('/proizvodstvo/itog-za-den?den='+today());
-  if(itog){
-    document.getElementById('pr-total-kg').textContent=fmtT(itog.reduce((s,r)=>s+r.itogo_kg,0));
-    document.getElementById('pr-total-partiy').textContent=itog.reduce((s,r)=>s+r.partiy,0);
+  const vidy = await api('/sklad/vidy-syrya');
+  if (vidy) _vidy_zames = vidy;
+  if (_komponenty.length === 0) {
+    addKomponent();
+  } else {
+    renderKomponenty();
+  }
+
+  const ostatki = await api('/sklad/ostatki');
+  const el = document.getElementById('zames-ostatki');
+  if (el && ostatki) {
+    el.innerHTML = ostatki.map(o => {
+      const pct = Math.min(100,(o.kolichestvo_kg/(o.min_ostatok*10||50000))*100);
+      const c = o.preduprejdenie ? 'var(--amber)' : 'var(--green)';
+      return '<div class="stock-item"><span class="stock-name">'+o.name+'</span><div class="stock-bar-wrap"><div class="stock-bar" style="width:'+pct+'%;background:'+c+'"></div></div><span class="stock-qty" style="color:'+c+'">'+fmt(o.kolichestvo_kg)+' кг'+(o.preduprejdenie?' ⚠':'')+'</span></div>';
+    }).join('');
+    const warns = ostatki.filter(o => o.preduprejdenie);
+    const w = document.getElementById('zames-warn');
+    if (w) {
+      if (warns.length) { w.style.display='flex'; w.querySelector('span').textContent=warns.map(o=>o.name+': '+fmt(o.kolichestvo_kg)+' кг').join(' | '); }
+      else w.style.display = 'none';
+    }
+  }
+
+  const rows = await api('/proizvodstvo/?den=' + today());
+  const tb = document.getElementById('prod-tbody');
+  if (tb) tb.innerHTML = rows && rows.length ? rows.map(r =>
+    '<tr><td class="mono">'+timeStr(r.data_vremya)+'</td><td><span class="tag tag-green">'+(r.marka&&r.marka.name?r.marka.name:r.marka_id)+'</span></td><td style="color:var(--text3)">'+r.smena+'</td><td style="text-align:center;font-family:'IBM Plex Mono',monospace">'+(r.temperatura||'—')+'</td><td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">'+fmt(r.ves_kg)+'</td><td><button class="btn btn-ghost" style="padding:3px 8px;font-size:12px;color:var(--red)" onclick="deleteRecord('proizvodstvo','+r.id+')">✕</button></td></tr>'
+  ).join('') : '<tr><td colspan="6" class="loading">Нет замесов сегодня</td></tr>';
+
+  const itog = await api('/proizvodstvo/itog-za-den?den=' + today());
+  if (itog) {
+    const totalKg = itog.reduce((s,r)=>s+r.itogo_kg,0);
+    const totalP = itog.reduce((s,r)=>s+r.partiy,0);
+    document.getElementById('pr-total-kg').textContent = fmtT(totalKg);
+    document.getElementById('pr-total-partiy').textContent = totalP;
   }
 }
-async function saveProizvodstvo(){
-  const ves=getW('pr-ves');
-  if(!ves){showToast('Зафиксируйте вес партии!',false);return;}
-  const res=await apiPost('/proizvodstvo/',{
-    marka_id:+document.getElementById('pr-marka').value,
-    smena:+document.getElementById('pr-smena').value,
-    ves_kg:ves,
-    temperatura:parseFloat(document.getElementById('pr-temp').value)||null,
-    vremya_nach:document.getElementById('pr-nach').value||null,
-    vremya_kon:document.getElementById('pr-kon').value||null,
-    operator:'Оператор'
+
+async function saveZames() {
+  const ves = getW('pr-ves');
+  const markaId = +document.getElementById('pr-marka').value;
+  if (!markaId) { showToast('Выберите марку асфальта!', false); return; }
+  if (!ves) { showToast('Зафиксируйте вес асфальта!', false); return; }
+  const validKomp = _komponenty.filter(k => k.vid_id && k.fakt_kg > 0);
+  if (validKomp.length === 0) { showToast('Добавьте хотя бы одно сырьё!', false); return; }
+
+  for (const k of validKomp) {
+    const res = await apiPost('/raskhod/', {
+      vid_syrya_id: +k.vid_id,
+      marka_id: markaId,
+      fakt_kg: k.fakt_kg,
+      operator: 'Оператор'
+    });
+    if (!res) return;
+  }
+
+  const res = await apiPost('/proizvodstvo/', {
+    marka_id: markaId,
+    smena: +document.getElementById('pr-smena').value,
+    ves_kg: ves,
+    temperatura: parseFloat(document.getElementById('pr-temp').value) || null,
+    operator: 'Оператор'
   });
-  if(res){showToast('✓ Партия сохранена — '+fmtT(res.ves_kg));loadProizvodstvo();}
+
+  if (res) {
+    const totalS = validKomp.reduce((s,k)=>s+k.fakt_kg,0);
+    showToast('✓ Замес сохранён — асфальт ' + fmtT(ves) + ', сырьё ' + fmtT(totalS));
+    _komponenty = [];
+    addKomponent();
+    calcItogoSyrya();
+    document.getElementById('pr-ves').textContent = '0';
+    document.getElementById('pr-temp').value = '';
+    loadProizvodstvo();
+  }
 }
 
 // ══ ПРОДАЖИ ══
