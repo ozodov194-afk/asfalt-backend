@@ -31,7 +31,12 @@ app.include_router(dashboard.router,     prefix="/api/dashboard",     tags=["Ð”Ð
 
 @app.get("/ui")
 def ui():
-    return FileResponse("static/asfalt_zavod.html")
+    from fastapi.responses import FileResponse
+    response = FileResponse("static/asfalt_zavod.html")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @app.get("/")
 def root():
