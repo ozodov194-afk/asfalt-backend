@@ -2,6 +2,38 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
+# ─── ВЛОЖЕННЫЕ СПРАВОЧНИКИ ──────────────────────────────────────
+
+class VidSyryaShort(BaseModel):
+    id: int
+    name: str
+    class Config:
+        from_attributes = True
+
+class PostavshikShort(BaseModel):
+    id: int
+    name: str
+    class Config:
+        from_attributes = True
+
+class PokupatelShort(BaseModel):
+    id: int
+    name: str
+    class Config:
+        from_attributes = True
+
+class MarkaShort(BaseModel):
+    id: int
+    name: str
+    class Config:
+        from_attributes = True
+
+class AvtoShort(BaseModel):
+    id: int
+    gos_nomer: str
+    class Config:
+        from_attributes = True
+
 # ─── ПРИХОД СЫРЬЯ ───────────────────────────────────────────────
 
 class PrikhodCreate(BaseModel):
@@ -25,6 +57,9 @@ class PrikhodOut(BaseModel):
     netto_kg:       float
     nomer_nakladnoy: Optional[str]
     operator:       Optional[str]
+    vid_syrya:      Optional[VidSyryaShort]
+    postavshik:     Optional[PostavshikShort]
+    avto:           Optional[AvtoShort]
 
     class Config:
         from_attributes = True
@@ -47,6 +82,8 @@ class RaskhodOut(BaseModel):
     norma_kg:       Optional[float]
     otklonenie_pct: Optional[float]
     operator:       Optional[str]
+    vid_syrya:      Optional[VidSyryaShort]
+    marka:          Optional[MarkaShort]
 
     class Config:
         from_attributes = True
@@ -72,6 +109,7 @@ class ProizvodstvoOut(BaseModel):
     vremya_nach: Optional[str]
     vremya_kon:  Optional[str]
     operator:    Optional[str]
+    marka:       Optional[MarkaShort]
 
     class Config:
         from_attributes = True
@@ -101,6 +139,9 @@ class ProdazhaOut(BaseModel):
     summa:          Optional[float]
     operator:       Optional[str]
     nakladnaya_no:  Optional[str]
+    pokupatel:      Optional[PokupatelShort]
+    avto:           Optional[AvtoShort]
+    marka:          Optional[MarkaShort]
 
     class Config:
         from_attributes = True
