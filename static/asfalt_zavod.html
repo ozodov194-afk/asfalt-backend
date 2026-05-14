@@ -615,7 +615,6 @@ tr:hover td{background:var(--bg3)}
 //  НАСТРОЙКА — поменяй если backend на другом компьютере
 // ══════════════════════════════════════════════════════
 const API = 'https://web-production-fdeb0.up.railway.app/api';
-
 // ── Живые данные с весов (хранится после фиксации) ──
 let fixedWeights = { 'p-brutto':0, 'p-tara':0, 'pd-brutto':0, 'pd-tara':0, 'r-fakt':0, 'pr-ves':0 };
 let liveWeight = 0;
@@ -669,7 +668,12 @@ async function apiPost(url,body){
 function fmt(v){return Math.round(v).toLocaleString('ru-RU')}
 function fmtT(v){return (v/1000).toFixed(1)+' т'}
 function fmtMln(v){return (v/1000000).toFixed(1)+' млн'}
-function timeStr(dt){return new Date(dt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
+function timeStr(dt){
+  const d = new Date(dt);
+  // Сдвигаем на +5 часов (Ташкент)
+  const tash = new Date(d.getTime() + 5*60*60*1000);
+  return tash.toISOString().substr(11,5);
+}
 function today(){
   const d=new Date();
   // Используем UTC дату чтобы совпадало с сервером Railway
@@ -735,12 +739,14 @@ function calcSumma(){
 
 // ── СПРАВОЧНИКИ ──
 let _spravy=false;
+let _avtoList=[];
 async function loadSpravy(){
   if(_spravy)return;
   const[vidy,post,pokup,marki,avto]=await Promise.all([
     api('/sklad/vidy-syrya'),api('/sklad/postavshiki'),
     api('/sklad/pokupateli'),api('/sklad/marki-asfalta'),api('/sklad/avto')
   ]);
+  if(avto) _avtoList=avto;
   function fill(id,items,vk='id',lk='name'){
     const el=document.getElementById(id);
     if(!el||!items)return;
@@ -750,24 +756,60 @@ async function loadSpravy(){
   fill('r-vid',vidy);fill('r-marka',marki);
   fill('pr-marka',marki);
   fill('pd-pokup',pokup);fill('pd-marka',marki);
+
+  // Автозаполнение авто при выборе поставщика (приход)
+  const pPost=document.getElementById('p-post');
+  if(pPost) pPost.addEventListener('change',()=>{
+    const pid=parseInt(pPost.value);
+    const a=_avtoList.find(x=>x.postavshik_id===pid);
+    const gos=document.getElementById('p-gos');
+    if(a&&gos){ gos.value=a.gos_nomer; }
+  });
+
+  // Автозаполнение авто при выборе покупателя (продажа)
+  const pdPokup=document.getElementById('pd-pokup');
+  if(pdPokup) pdPokup.addEventListener('change',()=>{
+    const pid=parseInt(pdPokup.value);
+    const a=_avtoList.find(x=>x.pokupatel_id===pid);
+    const gos=document.getElementById('pd-gos');
+    const avtoId=document.getElementById('pd-avto-id');
+    if(a&&gos){ gos.value=a.gos_nomer; if(avtoId)avtoId.value=a.id; }
+  });
+
   _spravy=true;
 }
 
 // ── ПОИСК АВТО ──
 async function searchAvtoP(){
   const n=document.getElementById('p-gos').value.replace(/\s/g,'').toUpperCase();
-  if(n.length<4)return;
-  const d=await api('/prodazhi/avto/'+n);
   const el=document.getElementById('p-avto-found');
-  if(d){el.style.display='flex';el.textContent='✓ '+d.pokupatel;}
-  else{el.style.display='none';}
+  if(n.length<4){el.style.display='none';return;}
+  // Сначала ищем в локальном списке
+  const local=_avtoList.find(x=>x.gos_nomer===n);
+  if(local&&local.postavshik_id){
+    el.style.display='flex';
+    el.textContent='✓ '+(local.postavshik||'Найдено в справочнике');
+    document.getElementById('p-post').value=local.postavshik_id;
+    return;
+  }
+  el.style.display='none';
 }
 async function searchAvtoPD(){
   const n=document.getElementById('pd-gos').value.replace(/\s/g,'').toUpperCase();
-  if(n.length<4)return;
-  const d=await api('/prodazhi/avto/'+n);
   const el=document.getElementById('pd-avto-found');
-  if(d){
+  if(n.length<4){el.style.display='none';return;}
+  // Сначала ищем в локальном списке
+  const local=_avtoList.find(x=>x.gos_nomer===n);
+  if(local&&local.pokupatel_id){
+    el.style.display='flex';
+    el.textContent='✓ '+(local.pokupatel||'Найдено в справочнике');
+    document.getElementById('pd-pokup').value=local.pokupatel_id;
+    document.getElementById('pd-avto-id').value=local.id;
+    return;
+  }
+  // Если не нашли локально — спрашиваем API
+  const d=await api('/prodazhi/avto/'+n);
+  if(d&&d.pokupatel){
     el.style.display='flex';el.textContent='✓ '+d.pokupatel;
     if(d.pokupatel_id)document.getElementById('pd-pokup').value=d.pokupatel_id;
     document.getElementById('pd-avto-id').value=d.avto_id;
