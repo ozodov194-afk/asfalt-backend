@@ -83,3 +83,12 @@ def avto_by_nomer(gos_nomer: str, db: Session = Depends(get_db)):
         raise HTTPException(404, "Авто не найдено в базе")
     return {"avto_id": avto.id, "gos_nomer": avto.gos_nomer, "marka": avto.marka,
             "pokupatel_id": avto.pokupatel_id, "pokupatel": avto.pokupatel.name if avto.pokupatel else None}
+
+@router.delete("/{prodazha_id}", summary="Удалить продажу")
+def delete_prodazha(prodazha_id: int, db: Session = Depends(get_db)):
+    p = db.query(models.Prodazha).get(prodazha_id)
+    if not p:
+        raise HTTPException(404, "Запись не найдена")
+    db.delete(p)
+    db.commit()
+    return {"ok": True}

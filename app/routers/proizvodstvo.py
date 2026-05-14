@@ -51,3 +51,12 @@ def itog_proizvodstvo(den: date = None, db: Session = Depends(get_db)):
     )
     return [{"marka": r.name, "itogo_kg": round(r.itogo_kg, 1), "partiy": r.partiy,
              "avg_temperatura": round(r.avg_temp, 1) if r.avg_temp else None} for r in rows]
+
+@router.delete("/{prod_id}", summary="Удалить партию")
+def delete_proizvodstvo(prod_id: int, db: Session = Depends(get_db)):
+    p = db.query(models.Proizvodstvo).get(prod_id)
+    if not p:
+        raise HTTPException(404, "Запись не найдена")
+    db.delete(p)
+    db.commit()
+    return {"ok": True}

@@ -268,8 +268,8 @@ tr:hover td{background:var(--bg3)}
     <div class="card">
       <div class="card-label" style="margin-bottom:12px">Приходы сегодня</div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Время</th><th>Сырьё</th><th>Поставщик</th><th>Авто</th><th style="text-align:right">Нетто, кг</th></tr></thead>
-        <tbody id="prikhod-tbody"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
+        <thead><tr><th>Время</th><th>Сырьё</th><th>Поставщик</th><th>Авто</th><th style="text-align:right">Нетто, кг</th><th></th></tr></thead>
+        <tbody id="prikhod-tbody"><tr><td colspan="6" class="loading">Загрузка...</td></tr></tbody>
       </table></div>
     </div>
   </div>
@@ -614,7 +614,7 @@ tr:hover td{background:var(--bg3)}
 // ══════════════════════════════════════════════════════
 //  НАСТРОЙКА — поменяй если backend на другом компьютере
 // ══════════════════════════════════════════════════════
-const API = 'https://web-production-fdeb0.up.railway.app/api';
+const API = 'http://localhost:8000/api';
 
 // ── Живые данные с весов (хранится после фиксации) ──
 let fixedWeights = { 'p-brutto':0, 'p-tara':0, 'pd-brutto':0, 'pd-tara':0, 'r-fakt':0, 'pr-ves':0 };
@@ -670,7 +670,14 @@ function fmt(v){return Math.round(v).toLocaleString('ru-RU')}
 function fmtT(v){return (v/1000).toFixed(1)+' т'}
 function fmtMln(v){return (v/1000000).toFixed(1)+' млн'}
 function timeStr(dt){return new Date(dt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
-function today(){return new Date().toISOString().split('T')[0]}
+function today(){
+  const d=new Date();
+  // Используем UTC дату чтобы совпадало с сервером Railway
+  return d.toISOString().split('T')[0];
+}
+function todayUTC(){
+  return new Date().toISOString().split('T')[0];
+}
 function showToast(msg,ok=true){
   const t=document.getElementById('toast');
   t.textContent=msg;t.style.background=ok?'var(--green)':'var(--red)';t.style.color=ok?'#0f1117':'#fff';
@@ -873,7 +880,8 @@ async function loadPrikhod(){
       <td style="color:var(--text3)">${r.postavshik?.name||r.postavshik_id}</td>
       <td style="color:var(--text3)">${r.avto?.gos_nomer||'—'}</td>
       <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.netto_kg)}</td>
-    </tr>`).join(''):'<tr><td colspan="5" class="loading">Нет приходов сегодня</td></tr>';
+      <td><button class="btn btn-ghost" style="padding:3px 8px;font-size:12px;color:var(--red)" onclick="deleteRecord('prikhod',${r.id})">✕</button></td>
+    </tr>`).join(''):'<tr><td colspan="6" class="loading">Нет приходов сегодня</td></tr>';
 }
 async function savePrikhod(){
   const brutto=getW('p-brutto'), tara=getW('p-tara');
@@ -919,8 +927,9 @@ async function loadRaskhod(){
       <td><span class="tag tag-green">${r.marka?.name||r.marka_id}</span></td>
       <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.fakt_kg)}</td>
       <td style="text-align:right" class="${dev!=null&&Math.abs(dev)>2?'dev-warn':'dev-ok'}">${dev!=null?(dev>=0?'+':'')+dev+'%':'—'}</td>
+      <td><button class="btn btn-ghost" style="padding:3px 8px;font-size:12px;color:var(--red)" onclick="deleteRecord('raskhod',${r.id})">✕</button></td>
     </tr>`;
-  }).join(''):'<tr><td colspan="5" class="loading">Нет расходов сегодня</td></tr>';
+  }).join(''):'<tr><td colspan="6" class="loading">Нет расходов сегодня</td></tr>';
 }
 async function saveRaskhod(){
   const fakt=getW('r-fakt');
@@ -945,7 +954,8 @@ async function loadProizvodstvo(){
       <td style="color:var(--text3)">${r.smena}</td>
       <td style="text-align:center;font-family:'IBM Plex Mono',monospace">${r.temperatura||'—'}</td>
       <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.ves_kg)}</td>
-    </tr>`).join(''):'<tr><td colspan="5" class="loading">Нет партий сегодня</td></tr>';
+      <td><button class="btn btn-ghost" style="padding:3px 8px;font-size:12px;color:var(--red)" onclick="deleteRecord('proizvodstvo',${r.id})">✕</button></td>
+    </tr>`).join(''):'<tr><td colspan="6" class="loading">Нет партий сегодня</td></tr>';
   const itog=await api('/proizvodstvo/itog-za-den?den='+today());
   if(itog){
     document.getElementById('pr-total-kg').textContent=fmtT(itog.reduce((s,r)=>s+r.itogo_kg,0));
@@ -980,7 +990,8 @@ async function loadProdazhi(){
       <td><span class="tag tag-green">${r.marka?.name||r.marka_id}</span></td>
       <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.netto_kg)}</td>
       <td style="text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--green)">${r.summa?fmt(r.summa):'—'}</td>
-    </tr>`).join(''):'<tr><td colspan="6" class="loading">Нет отгрузок сегодня</td></tr>';
+      <td><button class="btn btn-ghost" style="padding:3px 8px;font-size:12px;color:var(--red)" onclick="deleteRecord('prodazhi',${r.id})">✕</button></td>
+    </tr>`).join(''):'<tr><td colspan="7" class="loading">Нет отгрузок сегодня</td></tr>';
 }
 async function saveProdazha(){
   const brutto=getW('pd-brutto'),tara=getW('pd-tara');
@@ -1402,6 +1413,22 @@ function printNakladnaya() {
   </div>
   </body></html>`);
   w.document.close();
+}
+
+// ══ УДАЛЕНИЕ ЗАПИСЕЙ ══
+async function deleteRecord(tip, id) {
+  if(!confirm('Удалить эту запись?')) return;
+  const urls = { prikhod: '/prikhod/', raskhod: '/raskhod/', proizvodstvo: '/proizvodstvo/', prodazhi: '/prodazhi/' };
+  const r = await fetch(API + urls[tip] + id, {method:'DELETE'});
+  if(r.ok){
+    showToast('✓ Запись удалена');
+    if(tip==='prikhod') loadPrikhod();
+    else if(tip==='raskhod') loadRaskhod();
+    else if(tip==='proizvodstvo') loadProizvodstvo();
+    else if(tip==='prodazhi') loadProdazhi();
+  } else {
+    showToast('Ошибка удаления', false);
+  }
 }
 
 // ── Запуск ──

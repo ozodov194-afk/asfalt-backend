@@ -52,3 +52,16 @@ def itog_raskhod(den: date = None, db: Session = Depends(get_db)):
         .group_by(models.VidSyrya.name).all()
     )
     return [{"vid_syrya": r.name, "itogo_kg": r.itogo_kg} for r in rows]
+
+@router.delete("/{raskhod_id}", summary="Удалить расход")
+def delete_raskhod(raskhod_id: int, db: Session = Depends(get_db)):
+    r = db.query(models.RaskhodSyrya).get(raskhod_id)
+    if not r:
+        raise HTTPException(404, "Запись не найдена")
+    # Вернуть на склад
+    ostatok = db.query(models.Ostatok).filter_by(vid_syrya_id=r.vid_syrya_id).first()
+    if ostatok:
+        ostatok.kolichestvo_kg += r.fakt_kg
+    db.delete(r)
+    db.commit()
+    return {"ok": True}

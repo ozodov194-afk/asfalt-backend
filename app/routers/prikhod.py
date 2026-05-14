@@ -66,3 +66,16 @@ def get_prikhod_one(prikhod_id: int, db: Session = Depends(get_db)):
     if not p:
         raise HTTPException(404, "Запись не найдена")
     return p
+
+@router.delete("/{prikhod_id}", summary="Удалить приход")
+def delete_prikhod(prikhod_id: int, db: Session = Depends(get_db)):
+    p = db.query(models.PrikhodSyrya).get(prikhod_id)
+    if not p:
+        raise HTTPException(404, "Запись не найдена")
+    # Вернуть на склад
+    ostatok = db.query(models.Ostatok).filter_by(vid_syrya_id=p.vid_syrya_id).first()
+    if ostatok:
+        ostatok.kolichestvo_kg -= p.netto_kg
+    db.delete(p)
+    db.commit()
+    return {"ok": True}
