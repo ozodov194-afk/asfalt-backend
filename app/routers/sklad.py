@@ -139,7 +139,9 @@ def get_avto(db: Session = Depends(get_db)):
             "gos_nomer": a.gos_nomer,
             "marka": a.marka,
             "gruzopod_kg": a.gruzopod_kg,
+            "pokupatel_id": a.pokupatel_id,
             "pokupatel": a.pokupatel.name if a.pokupatel else None,
+            "postavshik_id": a.postavshik_id,
             "postavshik": a.postavshik.name if a.postavshik else None,
         }
         for a in avto_list

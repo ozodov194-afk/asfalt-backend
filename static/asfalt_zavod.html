@@ -669,10 +669,12 @@ function fmt(v){return Math.round(v).toLocaleString('ru-RU')}
 function fmtT(v){return (v/1000).toFixed(1)+' т'}
 function fmtMln(v){return (v/1000000).toFixed(1)+' млн'}
 function timeStr(dt){
-  const d = new Date(dt);
-  // Сдвигаем на +5 часов (Ташкент)
-  const tash = new Date(d.getTime() + 5*60*60*1000);
-  return tash.toISOString().substr(11,5);
+  // Сервер Railway хранит UTC, Ташкент = UTC+5
+  const d = new Date(dt.endsWith('Z') ? dt : dt + 'Z');
+  return d.toLocaleTimeString('ru-RU', {
+    hour: '2-digit', minute: '2-digit',
+    timeZone: 'Asia/Tashkent'
+  });
 }
 function today(){
   const d=new Date();
