@@ -253,7 +253,7 @@ tr:hover td{background:var(--bg3)}
         <div class="field"><label>Поставщик</label><select id="p-post"><option value="">Загрузка...</option></select></div>
         <div class="field">
           <label>Гос. номер авто</label>
-          <input id="p-gos" type="text" placeholder="01А123АА" oninput="searchAvtoP()"/>
+          <select id="p-gos" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:13px;color:var(--text);outline:none;width:100%"><option value="">— выберите авто —</option></select>
           <div class="auto-found" id="p-avto-found"></div>
           <input type="hidden" id="p-avto-id"/>
         </div>
@@ -407,7 +407,7 @@ tr:hover td{background:var(--bg3)}
       <div class="form-grid">
         <div class="field">
           <label>Гос. номер авто</label>
-          <input id="pd-gos" type="text" placeholder="20В450ВА" oninput="searchAvtoPD()"/>
+          <select id="pd-gos" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:13px;color:var(--text);outline:none;width:100%"><option value="">— выберите авто —</option></select>
           <div class="auto-found" id="pd-avto-found"></div>
           <input type="hidden" id="pd-avto-id"/>
         </div>
@@ -615,6 +615,7 @@ tr:hover td{background:var(--bg3)}
 //  НАСТРОЙКА — поменяй если backend на другом компьютере
 // ══════════════════════════════════════════════════════
 const API = 'https://web-production-fdeb0.up.railway.app/api';
+
 // ── Живые данные с весов (хранится после фиксации) ──
 let fixedWeights = { 'p-brutto':0, 'p-tara':0, 'pd-brutto':0, 'pd-tara':0, 'r-fakt':0, 'pr-ves':0 };
 let liveWeight = 0;
@@ -761,19 +762,33 @@ async function loadSpravy(){
   const pPost=document.getElementById('p-post');
   if(pPost) pPost.addEventListener('change',()=>{
     const pid=parseInt(pPost.value);
-    const a=_avtoList.find(x=>x.postavshik_id===pid);
-    const gos=document.getElementById('p-gos');
-    if(a&&gos){ gos.value=a.gos_nomer; }
+    const gosEl=document.getElementById('p-gos');
+    if(!gosEl) return;
+    const avtos=_avtoList.filter(x=>x.postavshik_id===pid);
+    gosEl.innerHTML='<option value="">— выберите авто —</option>'+
+      avtos.map(a=>`<option value="${a.gos_nomer}">${a.gos_nomer}${a.marka?' ('+a.marka+')':''}</option>`).join('');
+    if(avtos.length===1) gosEl.value=avtos[0].gos_nomer;
   });
 
   // Автозаполнение авто при выборе покупателя (продажа)
   const pdPokup=document.getElementById('pd-pokup');
   if(pdPokup) pdPokup.addEventListener('change',()=>{
     const pid=parseInt(pdPokup.value);
-    const a=_avtoList.find(x=>x.pokupatel_id===pid);
-    const gos=document.getElementById('pd-gos');
+    const gosEl=document.getElementById('pd-gos');
     const avtoId=document.getElementById('pd-avto-id');
-    if(a&&gos){ gos.value=a.gos_nomer; if(avtoId)avtoId.value=a.id; }
+    if(!gosEl) return;
+    const avtos=_avtoList.filter(x=>x.pokupatel_id===pid);
+    gosEl.innerHTML='<option value="">— выберите авто —</option>'+
+      avtos.map(a=>`<option value="${a.gos_nomer}" data-id="${a.id}">${a.gos_nomer}${a.marka?' ('+a.marka+')':''}</option>`).join('');
+    if(avtos.length===1){
+      gosEl.value=avtos[0].gos_nomer;
+      if(avtoId) avtoId.value=avtos[0].id;
+    }
+    // При выборе авто сохранять avto_id
+    gosEl.onchange=()=>{
+      const sel=gosEl.options[gosEl.selectedIndex];
+      if(avtoId&&sel) avtoId.value=sel.getAttribute('data-id')||'';
+    };
   });
 
   _spravy=true;
@@ -928,9 +943,13 @@ async function loadPrikhod(){
 async function savePrikhod(){
   const brutto=getW('p-brutto'), tara=getW('p-tara');
   if(!brutto||!tara){showToast('Зафиксируйте брутто и тару!',false);return;}
+  const gosEl=document.getElementById('p-gos');
+  const gosNomer=gosEl.value||null;
+  const avtoObj=gosNomer?_avtoList.find(a=>a.gos_nomer===gosNomer):null;
   const res=await apiPost('/prikhod/',{
     vid_syrya_id:+document.getElementById('p-vid').value,
     postavshik_id:+document.getElementById('p-post').value,
+    avto_id:avtoObj?avtoObj.id:null,
     nomer_nakladnoy:document.getElementById('p-nakladnaya').value||null,
     brutto_kg:brutto, tara_kg:tara, operator:'Оператор'
   });
@@ -1038,9 +1057,13 @@ async function loadProdazhi(){
 async function saveProdazha(){
   const brutto=getW('pd-brutto'),tara=getW('pd-tara');
   if(!brutto||!tara){showToast('Зафиксируйте брутто и тару!',false);return;}
+  const gosEl=document.getElementById('pd-gos');
+  const gosNomer=gosEl.value||null;
+  const avtoObj=gosNomer?_avtoList.find(a=>a.gos_nomer===gosNomer):null;
+  const avtoId=avtoObj?avtoObj.id:(+document.getElementById('pd-avto-id').value||null);
   const res=await apiPost('/prodazhi/',{
     pokupatel_id:+document.getElementById('pd-pokup').value,
-    avto_id:+document.getElementById('pd-avto-id').value||null,
+    avto_id:avtoId,
     marka_id:+document.getElementById('pd-marka').value,
     brutto_kg:brutto, tara_kg:tara,
     tsena_za_tonnu:parseFloat(document.getElementById('pd-tsena').value)||null,
@@ -1355,7 +1378,8 @@ function printTalon() {
   const brutto = getW('p-brutto'), tara = getW('p-tara'), netto = brutto - tara;
   const vid = document.getElementById('p-vid');
   const post = document.getElementById('p-post');
-  const gos = document.getElementById('p-gos').value || '—';
+  const gosEl = document.getElementById('p-gos');
+  const gos = gosEl.value || '—';
   const nakl = document.getElementById('p-nakladnaya').value || '—';
   const vidName = vid.options[vid.selectedIndex]?.text || '—';
   const postName = post.options[post.selectedIndex]?.text || '—';
@@ -1403,7 +1427,8 @@ function printNakladnaya() {
   const brutto = getW('pd-brutto'), tara = getW('pd-tara'), netto = brutto - tara;
   const pokup = document.getElementById('pd-pokup');
   const marka = document.getElementById('pd-marka');
-  const gos = document.getElementById('pd-gos').value || '—';
+  const pdGosEl = document.getElementById('pd-gos');
+  const gos = pdGosEl.value || '—';
   const tsena = parseFloat(document.getElementById('pd-tsena').value) || 0;
   const summa = (netto / 1000) * tsena;
   const pokupName = pokup.options[pokup.selectedIndex]?.text || '—';
