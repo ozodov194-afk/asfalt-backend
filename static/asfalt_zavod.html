@@ -632,10 +632,12 @@ function fmt(v){return Math.round(v).toLocaleString('ru-RU')}
 function fmtT(v){return (v/1000).toFixed(1)+' т'}
 function fmtMln(v){return (v/1000000).toFixed(1)+' млн'}
 function timeStr(dt){
-  const d = new Date(dt);
-  // Сдвигаем на +5 часов (Ташкент)
-  const tash = new Date(d.getTime() + 5*60*60*1000);
-  return tash.toISOString().substr(11,5);
+  // Railway сохраняет UTC без Z — добавляем Z явно
+  const d = new Date(dt.endsWith('Z') ? dt : dt + 'Z');
+  const tash = new Date(d.getTime() + 5 * 60 * 60 * 1000);
+  const h = String(tash.getUTCHours()).padStart(2,'0');
+  const m = String(tash.getUTCMinutes()).padStart(2,'0');
+  return h + ':' + m;
 }
 function today(){
   const d=new Date();
