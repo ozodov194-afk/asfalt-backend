@@ -1,15 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date, text
-from datetime import date
+from sqlalchemy import func
+from datetime import date, datetime, timezone, timedelta
 from typing import List
 from app.database import get_db
 from app import models, schemas
 
 router = APIRouter()
 
-def tz_date(col):
-    return cast(col + text("interval '5 hours'"), Date)
+TZ_TASHKENT = timezone(timedelta(hours=5))
+
+def get_day_range(den: date):
+    start = datetime(den.year, den.month, den.day, 0, 0, 0, tzinfo=TZ_TASHKENT).astimezone(timezone.utc).replace(tzinfo=None)
+    end   = datetime(den.year, den.month, den.day, 23, 59, 59, tzinfo=TZ_TASHKENT).astimezone(timezone.utc).replace(tzinfo=None)
+    return start, end
 
 @router.post("/", response_model=schemas.ProdazhaOut, summary="Добавить отгрузку")
 def create_prodazha(data: schemas.ProdazhaCreate, db: Session = Depends(get_db)):
@@ -36,7 +40,8 @@ def create_prodazha(data: schemas.ProdazhaCreate, db: Session = Depends(get_db))
 def get_prodazhi(den: date = None, pokupatel_id: int = None, db: Session = Depends(get_db)):
     q = db.query(models.Prodazha)
     if den:
-        q = q.filter(tz_date(models.Prodazha.data_vremya) == den)
+        start, end = get_day_range(den)
+        q = q.filter(models.Prodazha.data_vremya >= start, models.Prodazha.data_vremya <= end)
     if pokupatel_id:
         q = q.filter_by(pokupatel_id=pokupatel_id)
     return q.order_by(models.Prodazha.data_vremya.desc()).all()
@@ -44,12 +49,13 @@ def get_prodazhi(den: date = None, pokupatel_id: int = None, db: Session = Depen
 @router.get("/itog-za-den", summary="Итог продаж за день")
 def itog_prodazhi(den: date = None, db: Session = Depends(get_db)):
     if not den:
-        den = date.today()
+        den = datetime.now(TZ_TASHKENT).date()
+    start, end = get_day_range(den)
     rows = (
         db.query(models.Pokupatel.name, func.sum(models.Prodazha.netto_kg).label("netto_kg"),
                  func.sum(models.Prodazha.summa).label("summa"), func.count(models.Prodazha.id).label("mashin"))
         .join(models.Pokupatel)
-        .filter(tz_date(models.Prodazha.data_vremya) == den)
+        .filter(models.Prodazha.data_vremya >= start, models.Prodazha.data_vremya <= end)
         .group_by(models.Pokupatel.name).all()
     )
     return [{"pokupatel": r.name, "netto_kg": round(r.netto_kg, 1), "summa": r.summa, "mashin": r.mashin} for r in rows]
@@ -62,9 +68,11 @@ def po_pokupatelam(date_from: date = None, date_to: date = None, db: Session = D
         .join(models.Pokupatel)
     )
     if date_from:
-        q = q.filter(tz_date(models.Prodazha.data_vremya) >= date_from)
+        start, _ = get_day_range(date_from)
+        q = q.filter(models.Prodazha.data_vremya >= start)
     if date_to:
-        q = q.filter(tz_date(models.Prodazha.data_vremya) <= date_to)
+        _, end = get_day_range(date_to)
+        q = q.filter(models.Prodazha.data_vremya <= end)
     rows = q.group_by(models.Pokupatel.name).order_by(func.sum(models.Prodazha.netto_kg).desc()).all()
     return [{"pokupatel": r.name, "netto_t": round(r.netto_kg/1000, 2), "summa": r.summa, "reysy": r.reysy} for r in rows]
 

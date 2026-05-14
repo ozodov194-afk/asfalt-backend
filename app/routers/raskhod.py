@@ -1,15 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date, text
-from datetime import date
+from sqlalchemy import func
+from datetime import date, datetime, timezone, timedelta
 from typing import List
 from app.database import get_db
 from app import models, schemas
 
 router = APIRouter()
 
-def tz_date(col):
-    return cast(col + text("interval '5 hours'"), Date)
+TZ_TASHKENT = timezone(timedelta(hours=5))
+
+def get_day_range(den: date):
+    start = datetime(den.year, den.month, den.day, 0, 0, 0, tzinfo=TZ_TASHKENT).astimezone(timezone.utc).replace(tzinfo=None)
+    end   = datetime(den.year, den.month, den.day, 23, 59, 59, tzinfo=TZ_TASHKENT).astimezone(timezone.utc).replace(tzinfo=None)
+    return start, end
 
 @router.post("/", response_model=schemas.RaskhodOut, summary="Добавить расход сырья")
 def create_raskhod(data: schemas.RaskhodCreate, db: Session = Depends(get_db)):
@@ -30,7 +34,8 @@ def create_raskhod(data: schemas.RaskhodCreate, db: Session = Depends(get_db)):
 def get_raskhod(den: date = None, vid_syrya_id: int = None, db: Session = Depends(get_db)):
     q = db.query(models.RaskhodSyrya)
     if den:
-        q = q.filter(tz_date(models.RaskhodSyrya.data_vremya) == den)
+        start, end = get_day_range(den)
+        q = q.filter(models.RaskhodSyrya.data_vremya >= start, models.RaskhodSyrya.data_vremya <= end)
     if vid_syrya_id:
         q = q.filter_by(vid_syrya_id=vid_syrya_id)
     return q.order_by(models.RaskhodSyrya.data_vremya.desc()).all()
@@ -38,12 +43,12 @@ def get_raskhod(den: date = None, vid_syrya_id: int = None, db: Session = Depend
 @router.get("/itog-za-den", summary="Итог расхода за день по видам сырья")
 def itog_raskhod(den: date = None, db: Session = Depends(get_db)):
     if not den:
-        den = date.today()
+        den = datetime.now(TZ_TASHKENT).date()
+    start, end = get_day_range(den)
     rows = (
         db.query(models.VidSyrya.name, func.sum(models.RaskhodSyrya.fakt_kg).label("itogo_kg"))
         .join(models.VidSyrya)
-        .filter(tz_date(models.RaskhodSyrya.data_vremya) == den)
-        .group_by(models.VidSyrya.name)
-        .all()
+        .filter(models.RaskhodSyrya.data_vremya >= start, models.RaskhodSyrya.data_vremya <= end)
+        .group_by(models.VidSyrya.name).all()
     )
     return [{"vid_syrya": r.name, "itogo_kg": r.itogo_kg} for r in rows]

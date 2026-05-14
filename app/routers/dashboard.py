@@ -1,41 +1,47 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date, text
-from datetime import date
+from sqlalchemy import func
+from datetime import date, datetime, timezone, timedelta
 from app.database import get_db
 from app import models
 
 router = APIRouter()
 
-def tz_date(col):
-    return cast(col + text("interval '5 hours'"), Date)
+TZ_TASHKENT = timezone(timedelta(hours=5))
+
+def get_day_range(den: date):
+    start = datetime(den.year, den.month, den.day, 0, 0, 0, tzinfo=TZ_TASHKENT).astimezone(timezone.utc).replace(tzinfo=None)
+    end   = datetime(den.year, den.month, den.day, 23, 59, 59, tzinfo=TZ_TASHKENT).astimezone(timezone.utc).replace(tzinfo=None)
+    return start, end
 
 @router.get("/segodnya", summary="Все данные дашборда за сегодня")
 def dashboard_segodnya(den: date = None, db: Session = Depends(get_db)):
     if not den:
-        den = date.today()
+        den = datetime.now(TZ_TASHKENT).date()
+
+    start, end = get_day_range(den)
 
     prikhod = db.query(
         func.coalesce(func.sum(models.PrikhodSyrya.netto_kg), 0),
         func.count(models.PrikhodSyrya.id)
-    ).filter(tz_date(models.PrikhodSyrya.data_vremya) == den).first()
+    ).filter(models.PrikhodSyrya.data_vremya >= start, models.PrikhodSyrya.data_vremya <= end).first()
 
     raskhod_rows = (
         db.query(models.VidSyrya.name, func.sum(models.RaskhodSyrya.fakt_kg).label("kg"))
         .join(models.VidSyrya)
-        .filter(tz_date(models.RaskhodSyrya.data_vremya) == den)
+        .filter(models.RaskhodSyrya.data_vremya >= start, models.RaskhodSyrya.data_vremya <= end)
         .group_by(models.VidSyrya.name).all()
     )
 
     proizvod = db.query(
         func.coalesce(func.sum(models.Proizvodstvo.ves_kg), 0),
         func.count(models.Proizvodstvo.id)
-    ).filter(tz_date(models.Proizvodstvo.data_vremya) == den).first()
+    ).filter(models.Proizvodstvo.data_vremya >= start, models.Proizvodstvo.data_vremya <= end).first()
 
     prod_marki = (
         db.query(models.MarkaAsfalta.name, func.sum(models.Proizvodstvo.ves_kg).label("kg"))
         .join(models.MarkaAsfalta)
-        .filter(tz_date(models.Proizvodstvo.data_vremya) == den)
+        .filter(models.Proizvodstvo.data_vremya >= start, models.Proizvodstvo.data_vremya <= end)
         .group_by(models.MarkaAsfalta.name).all()
     )
 
@@ -43,13 +49,13 @@ def dashboard_segodnya(den: date = None, db: Session = Depends(get_db)):
         func.coalesce(func.sum(models.Prodazha.netto_kg), 0),
         func.coalesce(func.sum(models.Prodazha.summa), 0),
         func.count(func.distinct(models.Prodazha.pokupatel_id))
-    ).filter(tz_date(models.Prodazha.data_vremya) == den).first()
+    ).filter(models.Prodazha.data_vremya >= start, models.Prodazha.data_vremya <= end).first()
 
     prikhod_vidy = (
         db.query(models.VidSyrya.name, func.sum(models.PrikhodSyrya.netto_kg).label("kg"),
                  func.count(models.PrikhodSyrya.id).label("mashin"))
         .join(models.VidSyrya)
-        .filter(tz_date(models.PrikhodSyrya.data_vremya) == den)
+        .filter(models.PrikhodSyrya.data_vremya >= start, models.PrikhodSyrya.data_vremya <= end)
         .group_by(models.VidSyrya.name).all()
     )
 
