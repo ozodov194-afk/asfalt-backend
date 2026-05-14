@@ -996,9 +996,18 @@ async function loadProizvodstvo() {
 
   const rows = await api('/proizvodstvo/?den=' + today());
   const tb = document.getElementById('prod-tbody');
-  if (tb) tb.innerHTML = rows && rows.length ? rows.map(r =>
-    '<tr><td class="mono">'+timeStr(r.data_vremya)+'</td><td><span class="tag tag-green">'+(r.marka&&r.marka.name?r.marka.name:r.marka_id)+'</span></td><td style="color:var(--text3)">'+r.smena+'</td><td style="text-align:center;font-family:'IBM Plex Mono',monospace">'+(r.temperatura||'—')+'</td><td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">'+fmt(r.ves_kg)+'</td><td><button class="btn btn-ghost" style="padding:3px 8px;font-size:12px;color:var(--red)" onclick="deleteRecord('proizvodstvo','+r.id+')">✕</button></td></tr>'
-  ).join('') : '<tr><td colspan="6" class="loading">Нет замесов сегодня</td></tr>';
+  if (tb) tb.innerHTML = rows && rows.length ? rows.map(r => {
+    const mName = r.marka && r.marka.name ? r.marka.name : r.marka_id;
+    const temp = r.temperatura || '—';
+    return `<tr>
+      <td class="mono">${timeStr(r.data_vremya)}</td>
+      <td><span class="tag tag-green">${mName}</span></td>
+      <td style="color:var(--text3)">${r.smena}</td>
+      <td style="text-align:center;font-family:'IBM Plex Mono',monospace">${temp}</td>
+      <td style="text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500">${fmt(r.ves_kg)}</td>
+      <td><button class="btn btn-ghost" style="padding:3px 8px;font-size:12px;color:var(--red)" onclick="deleteRecord('proizvodstvo',${r.id})">✕</button></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="6" class="loading">Нет замесов сегодня</td></tr>';
 
   const itog = await api('/proizvodstvo/itog-za-den?den=' + today());
   if (itog) {
